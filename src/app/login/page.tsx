@@ -65,52 +65,71 @@ export default function LoginPage() {
           RickyMath
         </h1>
         <p style={{ opacity: 0.85, fontSize: '0.95rem', fontWeight: 600, margin: '0 0 1.5rem' }}>
-          Iniciá sesión para practicar
+          Matemáticas en el Mundo de los Bloques
         </p>
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          <input
-            type="email" required placeholder="Email" value={email}
-            onChange={e => setEmail(e.target.value)}
-            style={inputStyle}
-          />
-          <input
-            type="password" required placeholder="Contraseña" value={password}
-            onChange={e => setPassword(e.target.value)}
-            style={inputStyle}
-          />
+        {/* CTA principal — crear cuenta es la acción que queremos que tome
+            la mayoría de quienes llegan acá, el login (abajo) es para
+            quien ya tiene cuenta, no al revés. */}
+        <Link href="/signup" className="gj-boton-3d" style={{
+          ...botonStyle, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
+          textDecoration: 'none', background: 'linear-gradient(180deg, #22c55e, #14532d)',
+          ['--gj-sombra' as string]: '#14532d', boxShadow: '0 6px 0 #14532d',
+        }}>
+          ✨ Crear cuenta gratis
+        </Link>
+        <p style={{ fontSize: '0.78rem', opacity: 0.7, margin: '0.5rem 0 0' }}>
+          Gratis, en menos de un minuto
+        </p>
 
-          {error && <p style={{ color: '#fca5a5', fontSize: '0.85rem', fontWeight: 700, margin: 0 }}>{error}</p>}
-
-          <button type="submit" disabled={loading} className="gj-boton-3d" style={{
-            ...botonStyle, background: 'linear-gradient(180deg, #22c55e, #14532d)',
-            ['--gj-sombra' as string]: '#14532d', boxShadow: '0 6px 0 #14532d',
-            opacity: loading ? 0.7 : 1,
-          }}>
-            {loading ? 'Entrando…' : 'Entrar'}
-          </button>
-        </form>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', margin: '1.25rem 0' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', margin: '1.5rem 0 1.25rem' }}>
           <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.25)' }} />
-          <span style={{ fontSize: '0.8rem', opacity: 0.7 }}>o</span>
+          <span style={{ fontSize: '0.8rem', opacity: 0.7 }}>¿Ya tenés cuenta?</span>
           <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.25)' }} />
         </div>
 
-        <button onClick={handleGoogleLogin} disabled={googleLoading} className="gj-boton-3d" style={{
-          ...botonStyle, background: 'linear-gradient(180deg, #f8fafc, #cbd5e1)', color: '#0f172a',
-          ['--gj-sombra' as string]: '#94a3b8', boxShadow: '0 6px 0 #94a3b8',
-          opacity: googleLoading ? 0.7 : 1,
+        <div style={{
+          background: 'rgba(0,0,0,0.18)', borderRadius: 20, padding: '1.25rem',
         }}>
-          {googleLoading ? 'Entrando…' : 'Continuar con Google'}
-        </button>
+          <button onClick={handleGoogleLogin} disabled={googleLoading} className="gj-boton-3d" style={{
+            ...botonStyle, fontSize: '0.9rem', padding: '0.7rem 1rem',
+            background: 'linear-gradient(180deg, #f8fafc, #cbd5e1)', color: '#0f172a',
+            ['--gj-sombra' as string]: '#94a3b8', boxShadow: '0 4px 0 #94a3b8',
+            opacity: googleLoading ? 0.7 : 1,
+          }}>
+            {googleLoading ? 'Entrando…' : 'Continuar con Google'}
+          </button>
 
-        <p style={{ marginTop: '1.5rem', fontSize: '0.9rem', opacity: 0.85 }}>
-          ¿Todavía no tenés cuenta?{' '}
-          <Link href="/signup" style={{ color: '#86efac', fontWeight: 800, textDecoration: 'none' }}>
-            Creá una gratis
-          </Link>
-        </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', margin: '0.9rem 0' }}>
+            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.15)' }} />
+            <span style={{ fontSize: '0.72rem', opacity: 0.6 }}>o</span>
+            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.15)' }} />
+          </div>
+
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+            <input
+              type="email" required placeholder="Email" value={email}
+              onChange={e => setEmail(e.target.value)}
+              style={{ ...inputStyle, padding: '0.65rem 0.9rem', fontSize: '0.9rem' }}
+            />
+            <input
+              type="password" required placeholder="Contraseña" value={password}
+              onChange={e => setPassword(e.target.value)}
+              style={{ ...inputStyle, padding: '0.65rem 0.9rem', fontSize: '0.9rem' }}
+            />
+
+            {error && <p style={{ color: '#fca5a5', fontSize: '0.8rem', fontWeight: 700, margin: 0 }}>{error}</p>}
+
+            <button type="submit" disabled={loading} className="gj-boton-3d" style={{
+              ...botonStyle, fontSize: '0.9rem', padding: '0.7rem 1rem',
+              background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.25)',
+              ['--gj-sombra' as string]: 'rgba(0,0,0,0.3)', boxShadow: '0 4px 0 rgba(0,0,0,0.3)',
+              opacity: loading ? 0.7 : 1,
+            }}>
+              {loading ? 'Entrando…' : 'Entrar'}
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   )
