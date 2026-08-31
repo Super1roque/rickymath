@@ -10,6 +10,9 @@ import EstilosJuego from '@/components/guia/EstilosJuego'
 import Confetti from '@/components/guia/Confetti'
 import BarraProgreso from '@/components/guia/BarraProgreso'
 import Ricky, { type RickyMood } from '@/components/guia/Ricky'
+import { useAuth } from '@/contexts/AuthContext'
+import { usePerfil } from '@/contexts/PerfilContext'
+import { guardarProgresoModulo } from '@/lib/progreso'
 
 // ── Datos de la actividad (basados en la hoja "Actividad 2 - Antes, Ahora y Después") ──
 // La hoja original muestra cada escena YA en el orden correcto (1, 2, 3 de
@@ -79,6 +82,8 @@ interface EstadoOrdenar {
 const ESTADO_INICIAL: EstadoOrdenar = { valores: ['', '', ''], evaluado: false, correcto: false }
 
 export default function PrimeroModulo02() {
+  const { user } = useAuth()
+  const { perfilActivo } = usePerfil()
   const [ordenar, setOrdenar] = useState<Record<number, EstadoOrdenar>>(() =>
     Object.fromEntries(ITEMS.map(p => [p.numero, { ...ESTADO_INICIAL, valores: [...ESTADO_INICIAL.valores] as [string, string, string] }])),
   )
@@ -96,6 +101,7 @@ export default function PrimeroModulo02() {
   // loop) si el módulo se completó perfecto.
   const [rickyMood, setRickyMood] = useState<RickyMood>('waving')
   const terminadoRef = useRef(false)
+  const progresoGuardado = useRef(false)
   const rickyTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
@@ -151,6 +157,16 @@ export default function PrimeroModulo02() {
       setRickyMood(totalCorrectas === TOTAL_PREGUNTAS ? 'celebrating' : totalCorrectas >= TOTAL_PREGUNTAS - 2 ? 'happy' : 'encouraging')
     }
   }, [terminado, totalCorrectas])
+
+  useEffect(() => {
+    if (!terminado) { progresoGuardado.current = false; return }
+    if (!user || !perfilActivo || progresoGuardado.current) return
+    progresoGuardado.current = true
+    guardarProgresoModulo(user.uid, perfilActivo.id, 'primero-modulo-02', {
+      correctas: totalCorrectas, total: TOTAL_PREGUNTAS, puntos, mejorRacha,
+    })
+  }, [terminado, user, perfilActivo, totalCorrectas, puntos, mejorRacha])
+
 
   function comprobarOrden(p: PreguntaOrdenar) {
     const actual = ordenar[p.numero]

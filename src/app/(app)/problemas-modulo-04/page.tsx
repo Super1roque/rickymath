@@ -10,6 +10,9 @@ import EstilosJuego from '@/components/guia/EstilosJuego'
 import Confetti from '@/components/guia/Confetti'
 import BarraProgreso from '@/components/guia/BarraProgreso'
 import Ricky, { type RickyMood } from '@/components/guia/Ricky'
+import { useAuth } from '@/contexts/AuthContext'
+import { usePerfil } from '@/contexts/PerfilContext'
+import { guardarProgresoModulo } from '@/lib/progreso'
 
 // ── Datos de la actividad (basados en la hoja "Misión 04 - Repartir el
 // botín", serie "Problemas"). Todos los ítems son repartos en partes
@@ -97,6 +100,8 @@ const TOTAL_PREGUNTAS = PROBLEMAS.length
 interface EstadoItem { valor: string; valor2: string; evaluado: boolean; correcto: boolean }
 
 export default function ProblemasModulo04() {
+  const { user } = useAuth()
+  const { perfilActivo } = usePerfil()
   const [items, setItems] = useState<Record<number, EstadoItem>>(() =>
     Object.fromEntries(PROBLEMAS.map(p => [p.numero, { valor: '', valor2: '', evaluado: false, correcto: false }])),
   )
@@ -108,6 +113,7 @@ export default function ProblemasModulo04() {
 
   const [rickyMood, setRickyMood] = useState<RickyMood>('waving')
   const terminadoRef = useRef(false)
+  const progresoGuardado = useRef(false)
   const rickyTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
@@ -163,6 +169,16 @@ export default function ProblemasModulo04() {
       setRickyMood(totalCorrectas === TOTAL_PREGUNTAS ? 'celebrating' : totalCorrectas >= TOTAL_PREGUNTAS - 2 ? 'happy' : 'encouraging')
     }
   }, [terminado, totalCorrectas])
+
+  useEffect(() => {
+    if (!terminado) { progresoGuardado.current = false; return }
+    if (!user || !perfilActivo || progresoGuardado.current) return
+    progresoGuardado.current = true
+    guardarProgresoModulo(user.uid, perfilActivo.id, 'problemas-modulo-04', {
+      correctas: totalCorrectas, total: TOTAL_PREGUNTAS, puntos, mejorRacha,
+    })
+  }, [terminado, user, perfilActivo, totalCorrectas, puntos, mejorRacha])
+
 
   function comprobarItem(p: Problema) {
     const actual = items[p.numero]

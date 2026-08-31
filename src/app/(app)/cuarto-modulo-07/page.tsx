@@ -10,6 +10,9 @@ import EstilosJuego from '@/components/guia/EstilosJuego'
 import Confetti from '@/components/guia/Confetti'
 import BarraProgreso from '@/components/guia/BarraProgreso'
 import Ricky, { type RickyMood } from '@/components/guia/Ricky'
+import { useAuth } from '@/contexts/AuthContext'
+import { usePerfil } from '@/contexts/PerfilContext'
+import { guardarProgresoModulo } from '@/lib/progreso'
 
 // ── Datos de la actividad (basados en la hoja "Actividad 7 - Área"). Las
 // áreas de los 9 terrenos las confirmó el usuario a mano (contar bloques en
@@ -88,6 +91,8 @@ const TOTAL_PREGUNTAS = ITEMS.length + COMPLETAR.length
 interface EstadoSimple { valor: string; evaluado: boolean; correcto: boolean }
 
 export default function CuartoModulo07() {
+  const { user } = useAuth()
+  const { perfilActivo } = usePerfil()
   const [items, setItems] = useState<Record<number, EstadoSimple>>(() =>
     Object.fromEntries(ITEMS.map(p => [p.numero, { valor: '', evaluado: false, correcto: false }])),
   )
@@ -102,6 +107,7 @@ export default function CuartoModulo07() {
 
   const [rickyMood, setRickyMood] = useState<RickyMood>('waving')
   const terminadoRef = useRef(false)
+  const progresoGuardado = useRef(false)
   const rickyTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
@@ -167,6 +173,16 @@ export default function CuartoModulo07() {
       setRickyMood(totalCorrectas === TOTAL_PREGUNTAS ? 'celebrating' : totalCorrectas >= TOTAL_PREGUNTAS - 2 ? 'happy' : 'encouraging')
     }
   }, [terminado, totalCorrectas])
+
+  useEffect(() => {
+    if (!terminado) { progresoGuardado.current = false; return }
+    if (!user || !perfilActivo || progresoGuardado.current) return
+    progresoGuardado.current = true
+    guardarProgresoModulo(user.uid, perfilActivo.id, 'cuarto-modulo-07', {
+      correctas: totalCorrectas, total: TOTAL_PREGUNTAS, puntos, mejorRacha,
+    })
+  }, [terminado, user, perfilActivo, totalCorrectas, puntos, mejorRacha])
+
 
   function comprobarItem(p: ItemArea) {
     const actual = items[p.numero]

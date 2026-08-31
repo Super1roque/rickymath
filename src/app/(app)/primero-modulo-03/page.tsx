@@ -10,6 +10,9 @@ import EstilosJuego from '@/components/guia/EstilosJuego'
 import Confetti from '@/components/guia/Confetti'
 import BarraProgreso from '@/components/guia/BarraProgreso'
 import Ricky, { type RickyMood } from '@/components/guia/Ricky'
+import { useAuth } from '@/contexts/AuthContext'
+import { usePerfil } from '@/contexts/PerfilContext'
+import { guardarProgresoModulo } from '@/lib/progreso'
 
 // ── Datos de la actividad (basados en la hoja "Actividad 3 - Mayor, Menor o Igual") ──
 // Cantidades y signo correcto confirmados a mano por el usuario mirando la
@@ -81,6 +84,8 @@ interface EstadoComparar {
 const ESTADO_INICIAL: EstadoComparar = { seleccion: null, evaluado: false, correcto: false }
 
 export default function PrimeroModulo03() {
+  const { user } = useAuth()
+  const { perfilActivo } = usePerfil()
   const [comparar, setComparar] = useState<Record<number, EstadoComparar>>(() =>
     Object.fromEntries(ITEMS.map(p => [p.numero, { ...ESTADO_INICIAL }])),
   )
@@ -98,6 +103,7 @@ export default function PrimeroModulo03() {
   // loop) si el módulo se completó perfecto.
   const [rickyMood, setRickyMood] = useState<RickyMood>('waving')
   const terminadoRef = useRef(false)
+  const progresoGuardado = useRef(false)
   const rickyTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
@@ -153,6 +159,16 @@ export default function PrimeroModulo03() {
       setRickyMood(totalCorrectas === TOTAL_PREGUNTAS ? 'celebrating' : totalCorrectas >= TOTAL_PREGUNTAS - 2 ? 'happy' : 'encouraging')
     }
   }, [terminado, totalCorrectas])
+
+  useEffect(() => {
+    if (!terminado) { progresoGuardado.current = false; return }
+    if (!user || !perfilActivo || progresoGuardado.current) return
+    progresoGuardado.current = true
+    guardarProgresoModulo(user.uid, perfilActivo.id, 'primero-modulo-03', {
+      correctas: totalCorrectas, total: TOTAL_PREGUNTAS, puntos, mejorRacha,
+    })
+  }, [terminado, user, perfilActivo, totalCorrectas, puntos, mejorRacha])
+
 
   function elegirSigno(p: PreguntaComparar, opcion: Signo) {
     const actual = comparar[p.numero]

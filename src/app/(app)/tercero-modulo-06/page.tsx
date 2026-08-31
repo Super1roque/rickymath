@@ -10,6 +10,9 @@ import EstilosJuego from '@/components/guia/EstilosJuego'
 import Confetti from '@/components/guia/Confetti'
 import BarraProgreso from '@/components/guia/BarraProgreso'
 import Ricky, { type RickyMood } from '@/components/guia/Ricky'
+import { useAuth } from '@/contexts/AuthContext'
+import { usePerfil } from '@/contexts/PerfilContext'
+import { guardarProgresoModulo } from '@/lib/progreso'
 
 // ── Datos de la actividad (basados en la hoja "Actividad 6 - Perímetro") ──
 // Lados de las figuras 5 y 6 (irregulares) confirmados a mano por el
@@ -91,6 +94,8 @@ interface EstadoPregunta {
 const ESTADO_INICIAL: EstadoPregunta = { valor: '', evaluado: false, correcto: false }
 
 export default function TerceroModulo06() {
+  const { user } = useAuth()
+  const { perfilActivo } = usePerfil()
   const [figuras, setFiguras] = useState<Record<number, EstadoPregunta>>(() =>
     Object.fromEntries(FIGURAS.map(p => [p.numero, { ...ESTADO_INICIAL }])),
   )
@@ -111,6 +116,7 @@ export default function TerceroModulo06() {
   // módulo se completó perfecto.
   const [rickyMood, setRickyMood] = useState<RickyMood>('waving')
   const terminadoRef = useRef(false)
+  const progresoGuardado = useRef(false)
   const rickyTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
@@ -176,6 +182,16 @@ export default function TerceroModulo06() {
       setRickyMood(totalCorrectas === TOTAL_PREGUNTAS ? 'celebrating' : totalCorrectas >= TOTAL_PREGUNTAS - 2 ? 'happy' : 'encouraging')
     }
   }, [terminado, totalCorrectas])
+
+  useEffect(() => {
+    if (!terminado) { progresoGuardado.current = false; return }
+    if (!user || !perfilActivo || progresoGuardado.current) return
+    progresoGuardado.current = true
+    guardarProgresoModulo(user.uid, perfilActivo.id, 'tercero-modulo-06', {
+      correctas: totalCorrectas, total: TOTAL_PREGUNTAS, puntos, mejorRacha,
+    })
+  }, [terminado, user, perfilActivo, totalCorrectas, puntos, mejorRacha])
+
 
   // Se lee el estado actual del closure (no la forma funcional de setState)
   // porque acá SÍ importa ejecutar el sonido una sola vez, exactamente

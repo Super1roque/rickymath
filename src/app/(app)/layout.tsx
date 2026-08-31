@@ -54,6 +54,17 @@ export default function AppGroupLayout({ children }: { children: React.ReactNode
         </button>
         <span style={{ opacity: 0.4 }}>|</span>
         <button
+          onClick={() => router.push('/progreso')}
+          title="Ver progreso (para padres)"
+          style={{
+            background: 'none', border: 'none', color: 'rgba(255,255,255,0.75)', cursor: 'pointer',
+            fontFamily: 'inherit', fontSize: '0.85rem', fontWeight: 700, padding: '0.2rem 0.3rem',
+          }}
+        >
+          📊
+        </button>
+        <span style={{ opacity: 0.4 }}>|</span>
+        <button
           onClick={() => logout().then(() => router.replace('/login'))}
           style={{
             background: 'none', border: 'none', color: 'rgba(255,255,255,0.75)', cursor: 'pointer',

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
 import { usePerfil } from '@/contexts/PerfilContext'
 import { crearPerfil, actualizarPerfil, eliminarPerfil, CARITAS_DISPONIBLES, type Perfil } from '@/lib/perfiles'
@@ -47,9 +48,18 @@ export default function PerfilesPage() {
       <h1 style={{ fontSize: '1.7rem', fontWeight: 800, margin: '0.75rem 0 0.25rem', textShadow: '2px 2px 0 #0c4a6e' }}>
         {perfiles.length === 0 ? '¡Creá el primer perfil!' : '¿Quién va a jugar?'}
       </h1>
-      <p style={{ opacity: 0.85, fontSize: '0.95rem', fontWeight: 600, margin: '0 0 2rem' }}>
+      <p style={{ opacity: 0.85, fontSize: '0.95rem', fontWeight: 600, margin: '0 0 0.75rem' }}>
         {perfiles.length === 0 ? 'Elegí un nombre y una carita' : 'Elegí tu perfil para empezar'}
       </p>
+
+      {perfiles.length > 0 && (
+        <Link href="/progreso" style={{
+          display: 'inline-block', fontSize: '0.85rem', fontWeight: 700, color: 'rgba(255,255,255,0.8)',
+          textDecoration: 'underline', marginBottom: '1.5rem',
+        }}>
+          📊 Ver progreso (para padres)
+        </Link>
+      )}
 
       <div style={{
         display: 'flex', flexWrap: 'wrap', gap: '1.25rem', justifyContent: 'center',

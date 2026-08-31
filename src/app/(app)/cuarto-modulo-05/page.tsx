@@ -10,6 +10,9 @@ import EstilosJuego from '@/components/guia/EstilosJuego'
 import Confetti from '@/components/guia/Confetti'
 import BarraProgreso from '@/components/guia/BarraProgreso'
 import Ricky, { type RickyMood } from '@/components/guia/Ricky'
+import { useAuth } from '@/contexts/AuthContext'
+import { usePerfil } from '@/contexts/PerfilContext'
+import { guardarProgresoModulo } from '@/lib/progreso'
 
 // ── Datos de la actividad (basados en la hoja "Actividad 5 - Fracciones").
 // La hoja trae las equivalencias ya resueltas entre paréntesis (ej. "(2/4)")
@@ -92,6 +95,8 @@ interface EstadoSimple { valor: string; evaluado: boolean; correcto: boolean }
 interface EstadoComparar { seleccion: string; evaluado: boolean; correcto: boolean }
 
 export default function CuartoModulo05() {
+  const { user } = useAuth()
+  const { perfilActivo } = usePerfil()
   const [equivalentes, setEquivalentes] = useState<Record<number, EstadoSimple>>(() =>
     Object.fromEntries(EQUIVALENTES.map(p => [p.numero, { valor: '', evaluado: false, correcto: false }])),
   )
@@ -112,6 +117,7 @@ export default function CuartoModulo05() {
 
   const [rickyMood, setRickyMood] = useState<RickyMood>('waving')
   const terminadoRef = useRef(false)
+  const progresoGuardado = useRef(false)
   const rickyTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
@@ -181,6 +187,16 @@ export default function CuartoModulo05() {
       setRickyMood(totalCorrectas === TOTAL_PREGUNTAS ? 'celebrating' : totalCorrectas >= TOTAL_PREGUNTAS - 2 ? 'happy' : 'encouraging')
     }
   }, [terminado, totalCorrectas])
+
+  useEffect(() => {
+    if (!terminado) { progresoGuardado.current = false; return }
+    if (!user || !perfilActivo || progresoGuardado.current) return
+    progresoGuardado.current = true
+    guardarProgresoModulo(user.uid, perfilActivo.id, 'cuarto-modulo-05', {
+      correctas: totalCorrectas, total: TOTAL_PREGUNTAS, puntos, mejorRacha,
+    })
+  }, [terminado, user, perfilActivo, totalCorrectas, puntos, mejorRacha])
+
 
   function comprobarEquivalente(p: ItemEquivalente) {
     const actual = equivalentes[p.numero]
