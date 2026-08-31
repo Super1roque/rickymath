@@ -3,16 +3,22 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
+import { usePerfil } from '@/contexts/PerfilContext'
 
 export default function AppGroupLayout({ children }: { children: React.ReactNode }) {
   const { user, loading, logout } = useAuth()
+  const { perfilActivo, cargando: cargandoPerfiles, cambiarPerfil } = usePerfil()
   const router = useRouter()
 
-  useEffect(() => {
-    if (!loading && !user) router.replace('/login')
-  }, [loading, user, router])
+  const listo = !loading && !cargandoPerfiles
 
-  if (loading || !user) {
+  useEffect(() => {
+    if (!listo) return
+    if (!user) { router.replace('/login'); return }
+    if (!perfilActivo) router.replace('/perfiles')
+  }, [listo, user, perfilActivo, router])
+
+  if (!listo || !user || !perfilActivo) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f172a' }}>
         <div style={{
@@ -28,17 +34,35 @@ export default function AppGroupLayout({ children }: { children: React.ReactNode
   return (
     <>
       {children}
-      <button
-        onClick={() => logout().then(() => router.replace('/login'))}
-        style={{
-          position: 'fixed', top: 12, right: 12, zIndex: 50,
-          background: 'rgba(15, 23, 42, 0.55)', color: 'white', border: 'none',
-          borderRadius: 999, padding: '0.5rem 0.9rem', fontSize: '0.8rem', fontWeight: 700,
-          cursor: 'pointer', backdropFilter: 'blur(4px)',
-        }}
-      >
-        Cerrar sesión
-      </button>
+      <div style={{
+        position: 'fixed', top: 12, right: 12, zIndex: 50,
+        display: 'flex', alignItems: 'center', gap: '0.4rem',
+        background: 'rgba(15, 23, 42, 0.55)', borderRadius: 999, padding: '0.35rem 0.5rem 0.35rem 0.7rem',
+        backdropFilter: 'blur(4px)', color: 'white', fontSize: '0.8rem', fontWeight: 700,
+      }}>
+        <button
+          onClick={() => { cambiarPerfil(); router.push('/perfiles') }}
+          title="Cambiar de perfil"
+          style={{
+            background: 'none', border: 'none', color: 'white', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: '0.35rem', fontFamily: 'inherit',
+            fontSize: '0.8rem', fontWeight: 700, padding: '0.2rem 0.3rem',
+          }}
+        >
+          <span style={{ fontSize: '1.1rem' }}>{perfilActivo.cara}</span>
+          {perfilActivo.nombre}
+        </button>
+        <span style={{ opacity: 0.4 }}>|</span>
+        <button
+          onClick={() => logout().then(() => router.replace('/login'))}
+          style={{
+            background: 'none', border: 'none', color: 'rgba(255,255,255,0.75)', cursor: 'pointer',
+            fontFamily: 'inherit', fontSize: '0.75rem', fontWeight: 700, padding: '0.2rem 0.3rem',
+          }}
+        >
+          Salir
+        </button>
+      </div>
     </>
   )
 }

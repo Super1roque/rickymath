@@ -1,0 +1,9 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Cada padre/tutor solo puede leer y escribir sus propios perfiles de hijos.
+    match /usuarios/{uid}/perfiles/{perfilId} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+  }
+}
