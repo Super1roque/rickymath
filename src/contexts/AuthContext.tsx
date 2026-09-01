@@ -37,25 +37,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // siempre — a los 8s asumimos que no hay sesión.
     const timeoutId = setTimeout(() => setLoading(false), 8000)
     const unsubscribe = onAuthStateChanged(auth, async u => {
-      clearTimeout(timeoutId)
       setUser(u)
-      if (u) {
-        let tenant = await getTenant(u.uid)
-        if (!tenant) {
-          // Cuentas creadas antes de que existiera este doc (o que por lo
-          // que sea nunca lo tuvieron) — se autocompleta con lo que ya
-          // sabe Firebase Auth, así no quedan invisibles para el panel de
-          // superadmin para siempre.
-          await crearTenantSiNoExiste(u.uid, {
-            nombre: u.displayName ?? '', email: u.email ?? '', telefono: '',
-          })
-          tenant = await getTenant(u.uid)
+      try {
+        if (u) {
+          let tenant = await getTenant(u.uid)
+          if (!tenant) {
+            // Cuentas creadas antes de que existiera este doc (o que por lo
+            // que sea nunca lo tuvieron) — se autocompleta con lo que ya
+            // sabe Firebase Auth, así no quedan invisibles para el panel de
+            // superadmin para siempre.
+            await crearTenantSiNoExiste(u.uid, {
+              nombre: u.displayName ?? '', email: u.email ?? '', telefono: '',
+            })
+            tenant = await getTenant(u.uid)
+          }
+          setTenantData(tenant)
+        } else {
+          setTenantData(null)
         }
-        setTenantData(tenant)
-      } else {
+      } catch (e) {
+        // Si falla la lectura/creación del tenant (red, permisos, lo que
+        // sea) no dejamos al usuario colgado en el spinner para siempre —
+        // entra igual, sin datos de tenant, antes que trabado sin poder
+        // jugar.
+        console.error('Error cargando datos de tenant:', e)
         setTenantData(null)
+      } finally {
+        clearTimeout(timeoutId)
+        setLoading(false)
       }
-      setLoading(false)
     })
     return () => { clearTimeout(timeoutId); unsubscribe() }
   }, [])
