@@ -1,7 +1,8 @@
 import {
   doc, setDoc, updateDoc, getDoc, onSnapshot, collection, query, orderBy, serverTimestamp, getCountFromServer, type Timestamp,
 } from 'firebase/firestore'
-import { db } from '@/lib/firebase'
+import { httpsCallable } from 'firebase/functions'
+import { db, functions } from '@/lib/firebase'
 
 export type EstadoTenant = 'active' | 'suspended'
 
@@ -63,4 +64,15 @@ export async function obtenerCantidadPerfiles(uid: string): Promise<number> {
 export async function esSuperAdmin(uid: string): Promise<boolean> {
   const snap = await getDoc(doc(db, 'superadmins', uid))
   return snap.exists()
+}
+
+// Crea usuarios/{uid} para cuentas de Auth que nunca lo tuvieron (se
+// registraron antes de que existiera el doc) — vía Cloud Function porque
+// hace falta el Admin SDK para listar TODOS los usuarios de Auth, algo
+// que el cliente no puede hacer. Solo la puede llamar un superadmin (la
+// función lo revisa de nuevo del lado del servidor).
+export async function backfillTenants(): Promise<number> {
+  const llamar = httpsCallable<void, { creados: number }>(functions, 'backfillTenants')
+  const res = await llamar()
+  return res.data.creados
 }

@@ -1,5 +1,8 @@
-const { onRequest } = require('firebase-functions/v2/https')
+const { onRequest, onCall, HttpsError } = require('firebase-functions/v2/https')
 const { defineSecret } = require('firebase-functions/params')
+const admin = require('firebase-admin')
+
+admin.initializeApp()
 
 const DEEPGRAM_API_KEY = defineSecret('DEEPGRAM_API_KEY')
 
@@ -48,3 +51,38 @@ exports.guiaVoz = onRequest(
     }
   },
 )
+
+// Crea el doc usuarios/{uid} para cuentas de Firebase Auth que se
+// registraron antes de que existiera ese doc (o que por lo que sea nunca
+// lo tuvieron) — el cliente ya autocompleta esto la próxima vez que ESA
+// cuenta abre la app (ver AuthContext), pero para que el superadmin las
+// vea en el panel sin esperar a que vuelvan a entrar, hace falta el
+// Admin SDK para listar TODOS los usuarios de Auth, algo que el cliente
+// no puede hacer. Solo lo puede llamar quien ya esté en superadmins/{uid}.
+exports.backfillTenants = onCall({ region: 'us-central1' }, async request => {
+  if (!request.auth) throw new HttpsError('unauthenticated', 'Hay que iniciar sesión')
+  const soyAdmin = await admin.firestore().doc(`superadmins/${request.auth.uid}`).get()
+  if (!soyAdmin.exists) throw new HttpsError('permission-denied', 'No autorizado')
+
+  let creados = 0
+  let pageToken
+  do {
+    const pagina = await admin.auth().listUsers(1000, pageToken)
+    for (const u of pagina.users) {
+      const ref = admin.firestore().doc(`usuarios/${u.uid}`)
+      const snap = await ref.get()
+      if (snap.exists) continue
+      await ref.set({
+        nombre: u.displayName || '',
+        email: u.email || '',
+        telefono: u.phoneNumber || '',
+        status: 'active',
+        creadoEn: admin.firestore.Timestamp.fromDate(new Date(u.metadata.creationTime)),
+      })
+      creados++
+    }
+    pageToken = pagina.pageToken
+  } while (pageToken)
+
+  return { creados }
+})

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import {
-  esSuperAdmin, subscribeTenants, actualizarTenant, cambiarStatusTenant, obtenerCantidadPerfiles,
+  esSuperAdmin, subscribeTenants, actualizarTenant, cambiarStatusTenant, obtenerCantidadPerfiles, backfillTenants,
   type Tenant,
 } from '@/lib/tenants'
 
@@ -16,6 +16,22 @@ export default function SuperAdminPage() {
   const [cantidadPerfiles, setCantidadPerfiles] = useState<Record<string, number>>({})
   const [busqueda, setBusqueda] = useState('')
   const [editando, setEditando] = useState<Tenant | null>(null)
+  const [backfilling, setBackfilling] = useState(false)
+  const [mensajeBackfill, setMensajeBackfill] = useState('')
+
+  async function handleBackfill() {
+    setBackfilling(true)
+    setMensajeBackfill('')
+    try {
+      const creados = await backfillTenants()
+      setMensajeBackfill(creados > 0 ? `✅ Se completaron ${creados} cuenta${creados !== 1 ? 's' : ''} vieja${creados !== 1 ? 's' : ''}` : 'No había cuentas pendientes')
+    } catch (e) {
+      console.error(e)
+      setMensajeBackfill('❌ No se pudo completar la operación')
+    } finally {
+      setBackfilling(false)
+    }
+  }
 
   useEffect(() => {
     if (authLoading) return
@@ -75,13 +91,25 @@ export default function SuperAdminPage() {
             <h1 className="text-xl font-bold">RickyMath — Superadmin</h1>
             <p className="text-sm text-slate-500">{tenants.length} cuenta{tenants.length !== 1 ? 's' : ''} registrada{tenants.length !== 1 ? 's' : ''}</p>
           </div>
-          <button
-            onClick={() => logout().then(() => router.replace('/login'))}
-            className="text-sm font-medium text-slate-400 hover:text-white transition"
-          >
-            Cerrar sesión
-          </button>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={handleBackfill}
+              disabled={backfilling}
+              title="Crea el doc de tenant para cuentas de Auth que se registraron antes de que existiera (o que nunca lo tuvieron), así aparecen acá"
+              className="text-sm font-medium text-indigo-400 hover:text-indigo-300 disabled:opacity-50 transition"
+            >
+              {backfilling ? 'Completando…' : 'Completar cuentas viejas'}
+            </button>
+            <button
+              onClick={() => logout().then(() => router.replace('/login'))}
+              className="text-sm font-medium text-slate-400 hover:text-white transition"
+            >
+              Cerrar sesión
+            </button>
+          </div>
         </div>
+
+        {mensajeBackfill && <p className="text-sm text-slate-400">{mensajeBackfill}</p>}
 
         <input
           value={busqueda}
