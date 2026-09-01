@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
@@ -30,6 +30,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [tenantData, setTenantData] = useState<Tenant | null>(null)
   const [loading, setLoading] = useState(true)
+  // true mientras signup()/loginWithGoogle() están creando el doc de
+  // tenant con los datos reales (nombre del form, displayName de Google).
+  // onAuthStateChanged se dispara casi al mismo tiempo que esas dos
+  // funciones — sin esta bandera, su propia lógica de "crear si no
+  // existe" (pensada para cuentas viejas sin doc) corría en paralelo con
+  // datos vacíos y podía pisar el doc recién creado con el nombre/teléfono
+  // correctos, según cuál de las dos terminara última.
+  const creandoTenant = useRef(false)
 
   useEffect(() => {
     // Red de seguridad: si onAuthStateChanged nunca dispara (IndexedDB
@@ -38,6 +46,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const timeoutId = setTimeout(() => setLoading(false), 8000)
     const unsubscribe = onAuthStateChanged(auth, async u => {
       setUser(u)
+      if (creandoTenant.current) {
+        // signup()/loginWithGoogle() ya se están encargando de crear y
+        // setear tenantData — no duplicar el trabajo acá.
+        clearTimeout(timeoutId)
+        setLoading(false)
+        return
+      }
       try {
         if (u) {
           let tenant = await getTenant(u.uid)
@@ -79,19 +94,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function signup(email: string, password: string, nombre: string, telefono: string) {
-    const cred = await createUserWithEmailAndPassword(auth, email, password)
-    await crearTenantSiNoExiste(cred.user.uid, { nombre, email, telefono })
-    setTenantData(await getTenant(cred.user.uid))
+    creandoTenant.current = true
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, email, password)
+      await crearTenantSiNoExiste(cred.user.uid, { nombre, email, telefono })
+      setTenantData(await getTenant(cred.user.uid))
+    } finally {
+      creandoTenant.current = false
+    }
   }
 
   async function loginWithGoogle() {
-    const cred = await signInWithPopup(auth, new GoogleAuthProvider())
-    await crearTenantSiNoExiste(cred.user.uid, {
-      nombre: cred.user.displayName ?? '',
-      email: cred.user.email ?? '',
-      telefono: '',
-    })
-    setTenantData(await getTenant(cred.user.uid))
+    creandoTenant.current = true
+    try {
+      const cred = await signInWithPopup(auth, new GoogleAuthProvider())
+      await crearTenantSiNoExiste(cred.user.uid, {
+        nombre: cred.user.displayName ?? '',
+        email: cred.user.email ?? '',
+        telefono: '',
+      })
+      setTenantData(await getTenant(cred.user.uid))
+    } finally {
+      creandoTenant.current = false
+    }
   }
 
   async function logout() {
