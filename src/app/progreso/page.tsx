@@ -10,12 +10,24 @@ import { GRADOS_MANIFIESTO, moduloId } from '@/lib/manifiestoModulos'
 import { fuenteJuego } from '@/lib/fuenteJuego'
 import EstilosJuego from '@/components/guia/EstilosJuego'
 
+// Promedio simple de la calificación (correctas/total) de cada módulo que
+// el perfil ya jugó al menos una vez — usa el resultado de la última
+// jugada de cada módulo, no un historial completo de intentos (no se
+// guarda), pero alcanza para un "cómo le va en general" de un vistazo.
+function promedioPerfil(progreso: Record<string, ProgresoModulo> | undefined): number | null {
+  if (!progreso) return null
+  const modulos = Object.values(progreso)
+  if (modulos.length === 0) return null
+  const porcentajes = modulos.map(m => (m.total > 0 ? (m.correctas / m.total) * 100 : 0))
+  return Math.round(porcentajes.reduce((a, b) => a + b, 0) / porcentajes.length)
+}
+
 export default function ProgresoPage() {
   const { user, loading: authLoading } = useAuth()
   const { perfiles, cargando: cargandoPerfiles } = usePerfil()
   const router = useRouter()
   const [perfilId, setPerfilId] = useState<string | null>(null)
-  const [progreso, setProgreso] = useState<Record<string, ProgresoModulo>>({})
+  const [progresoPorPerfil, setProgresoPorPerfil] = useState<Record<string, Record<string, ProgresoModulo>>>({})
   const [cargandoProgreso, setCargandoProgreso] = useState(true)
 
   useEffect(() => {
@@ -26,15 +38,26 @@ export default function ProgresoPage() {
     if (!perfilId && perfiles.length > 0) setPerfilId(perfiles[0].id)
   }, [perfiles, perfilId])
 
+  // Se suscribe al progreso de TODOS los perfiles a la vez (no solo el
+  // elegido) — así el promedio debajo de cada tarjeta de perfil está
+  // disponible sin tener que cambiar de perfil primero.
+  const idsPerfiles = perfiles.map(p => p.id).join(',')
   useEffect(() => {
-    if (!user || !perfilId) { setProgreso({}); return }
+    if (!user || perfiles.length === 0) { setProgresoPorPerfil({}); setCargandoProgreso(false); return }
     setCargandoProgreso(true)
-    const unsub = suscribirseProgreso(user.uid, perfilId, mapa => {
-      setProgreso(mapa)
-      setCargandoProgreso(false)
-    })
-    return unsub
-  }, [user, perfilId])
+    let pendientes = perfiles.length
+    const unsubs = perfiles.map(p =>
+      suscribirseProgreso(user.uid, p.id, mapa => {
+        setProgresoPorPerfil(prev => ({ ...prev, [p.id]: mapa }))
+        pendientes = Math.max(0, pendientes - 1)
+        if (pendientes === 0) setCargandoProgreso(false)
+      }),
+    )
+    return () => unsubs.forEach(u => u())
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, idsPerfiles])
+
+  const progreso = perfilId ? (progresoPorPerfil[perfilId] ?? {}) : {}
 
   if (authLoading || cargandoPerfiles || !user) {
     return (
@@ -72,22 +95,32 @@ export default function ProgresoPage() {
         ) : (
           <>
             <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', marginBottom: '2rem' }}>
-              {perfiles.map(p => (
-                <button
-                  key={p.id}
-                  onClick={() => setPerfilId(p.id)}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer',
-                    padding: '0.5rem 0.9rem', borderRadius: 999, fontFamily: 'inherit', fontWeight: 700, fontSize: '0.9rem',
-                    border: p.id === perfilId ? '2px solid #22c55e' : '2px solid rgba(255,255,255,0.2)',
-                    background: p.id === perfilId ? 'rgba(34,197,94,0.18)' : 'rgba(255,255,255,0.06)',
-                    color: 'white',
-                  }}
-                >
-                  <span style={{ fontSize: '1.1rem' }}>{p.cara}</span>
-                  {p.nombre}
-                </button>
-              ))}
+              {perfiles.map(p => {
+                const promedio = promedioPerfil(progresoPorPerfil[p.id])
+                return (
+                  <div key={p.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.3rem' }}>
+                    <button
+                      onClick={() => setPerfilId(p.id)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer',
+                        padding: '0.5rem 0.9rem', borderRadius: 999, fontFamily: 'inherit', fontWeight: 700, fontSize: '0.9rem',
+                        border: p.id === perfilId ? '2px solid #22c55e' : '2px solid rgba(255,255,255,0.2)',
+                        background: p.id === perfilId ? 'rgba(34,197,94,0.18)' : 'rgba(255,255,255,0.06)',
+                        color: 'white',
+                      }}
+                    >
+                      <span style={{ fontSize: '1.1rem' }}>{p.cara}</span>
+                      {p.nombre}
+                    </button>
+                    <span style={{
+                      fontSize: '0.72rem', fontWeight: 700, opacity: 0.8,
+                      color: promedio === null ? 'rgba(255,255,255,0.5)' : promedio >= 80 ? '#4ade80' : promedio >= 50 ? '#fbbf24' : '#f87171',
+                    }}>
+                      {promedio === null ? 'Sin pruebas todavía' : `Promedio: ${promedio}%`}
+                    </span>
+                  </div>
+                )
+              })}
             </div>
 
             {perfilActivo && (
