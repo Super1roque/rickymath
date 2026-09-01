@@ -1,11 +1,15 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { fuenteJuego } from '@/lib/fuenteJuego'
 import { reproducirCorrecto } from '@/lib/guiaAudio'
 import EstilosJuego from '@/components/guia/EstilosJuego'
 import Ricky from '@/components/guia/Ricky'
 import BotonMenu from '@/components/guia/BotonMenu'
+import { useAuth } from '@/contexts/AuthContext'
+import { usePerfil } from '@/contexts/PerfilContext'
+import { suscribirseProgreso } from '@/lib/progreso'
 
 // Serie bonus "Tablas de Multiplicar" — 10 tarjetas fijas (tabla del 1 al
 // 10), pero solo algunas tienen módulo construido todavía. Las que no
@@ -35,6 +39,16 @@ const TABLAS: TablaInfo[] = [
 
 export default function TablasMenu() {
   const router = useRouter()
+  const { user } = useAuth()
+  const { perfilActivo } = usePerfil()
+  const [completados, setCompletados] = useState<Set<string>>(new Set())
+
+  useEffect(() => {
+    if (!user || !perfilActivo) { setCompletados(new Set()); return }
+    return suscribirseProgreso(user.uid, perfilActivo.id, progreso => {
+      setCompletados(new Set(Object.keys(progreso)))
+    })
+  }, [user, perfilActivo])
 
   // El sonido necesita un instante para escucharse antes de que la
   // navegación descarte la página — por eso el push se retrasa un toque en
@@ -73,20 +87,21 @@ export default function TablasMenu() {
         display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '1rem',
       }}>
         {TABLAS.map(t => (
-          <BotonTabla key={t.numero} t={t} onClick={() => irATabla(t)} />
+          <BotonTabla key={t.numero} t={t} completado={completados.has(t.slug)} onClick={() => irATabla(t)} />
         ))}
       </div>
     </div>
   )
 }
 
-function BotonTabla({ t, onClick }: { t: TablaInfo; onClick: () => void }) {
+function BotonTabla({ t, completado, onClick }: { t: TablaInfo; completado: boolean; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
       disabled={!t.disponible}
       className={t.disponible ? 'gj-boton-3d' : undefined}
       style={{
+        position: 'relative',
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.2rem',
         padding: '1.1rem 0.6rem', borderRadius: 20, border: 'none',
         cursor: t.disponible ? 'pointer' : 'default',
@@ -95,6 +110,15 @@ function BotonTabla({ t, onClick }: { t: TablaInfo; onClick: () => void }) {
         color: 'white', opacity: t.disponible ? 1 : 0.65,
       }}
     >
+      {completado && (
+        <span style={{
+          position: 'absolute', top: -10, right: -10, width: 32, height: 32, borderRadius: '50%',
+          background: '#22c55e', border: '3px solid white', boxShadow: '0 3px 0 rgba(0,0,0,0.25)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1,
+        }}>
+          <span style={{ color: 'white', fontSize: '1.15rem', fontWeight: 900, lineHeight: 1 }}>✓</span>
+        </span>
+      )}
       <span style={{ fontSize: '2.2rem', fontWeight: 900, lineHeight: 1 }}>{t.numero}</span>
       <span style={{ fontSize: '0.85rem', fontWeight: 800, letterSpacing: '0.02em' }}>
         {t.disponible ? 'Tabla' : '🔒 Pronto'}

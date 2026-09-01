@@ -6,6 +6,10 @@ import { reproducirCorrecto } from '@/lib/guiaAudio'
 import EstilosJuego from '@/components/guia/EstilosJuego'
 import Ricky from '@/components/guia/Ricky'
 import BotonMenu from '@/components/guia/BotonMenu'
+import { useEffect, useState } from 'react'
+import { useAuth } from '@/contexts/AuthContext'
+import { usePerfil } from '@/contexts/PerfilContext'
+import { suscribirseProgreso } from '@/lib/progreso'
 
 // Mismo color de identidad que usa cada módulo en su propio banner —
 // mantiene la coherencia visual entre "elegir la actividad acá" y "estar
@@ -34,6 +38,16 @@ const MODULOS: ModuloInfo[] = [
 
 export default function CuartoMenu() {
   const router = useRouter()
+  const { user } = useAuth()
+  const { perfilActivo } = usePerfil()
+  const [completados, setCompletados] = useState<Set<string>>(new Set())
+
+  useEffect(() => {
+    if (!user || !perfilActivo) { setCompletados(new Set()); return }
+    return suscribirseProgreso(user.uid, perfilActivo.id, progreso => {
+      setCompletados(new Set(Object.keys(progreso)))
+    })
+  }, [user, perfilActivo])
 
   // El sonido necesita un instante para escucharse antes de que la
   // navegación descarte la página — por eso el push se retrasa un toque en
@@ -75,19 +89,20 @@ export default function CuartoMenu() {
         display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.1rem',
       }}>
         {MODULOS.map(m => (
-          <BotonModulo key={m.numero} m={m} onClick={() => irAModulo(m.slug)} />
+          <BotonModulo key={m.numero} m={m} completado={completados.has(m.slug)} onClick={() => irAModulo(m.slug)} />
         ))}
       </div>
     </div>
   )
 }
 
-function BotonModulo({ m, onClick }: { m: ModuloInfo; onClick: () => void }) {
+function BotonModulo({ m, completado, onClick }: { m: ModuloInfo; completado: boolean; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
       className="gj-boton-3d"
       style={{
+        position: 'relative',
         display: 'flex', alignItems: 'center', gap: '0.85rem', textAlign: 'left',
         padding: '1.1rem 1.2rem', borderRadius: 20, border: 'none', cursor: 'pointer',
         background: m.color, color: 'white',
@@ -95,6 +110,15 @@ function BotonModulo({ m, onClick }: { m: ModuloInfo; onClick: () => void }) {
         [`--gj-sombra` as string]: m.colorOscuro,
       } as React.CSSProperties}
     >
+      {completado && (
+        <span style={{
+          position: 'absolute', top: -10, right: -10, width: 36, height: 36, borderRadius: '50%',
+          background: '#22c55e', border: '3px solid white', boxShadow: '0 3px 0 rgba(0,0,0,0.25)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1,
+        }}>
+          <span style={{ color: 'white', fontSize: '1.3rem', fontWeight: 900, lineHeight: 1 }}>✓</span>
+        </span>
+      )}
       <span style={{
         width: 48, height: 48, borderRadius: 999, background: 'rgba(255,255,255,0.2)',
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', flexShrink: 0,
