@@ -12,14 +12,20 @@ export default function AppGroupLayout({ children }: { children: React.ReactNode
 
   const listo = !loading && !cargandoPerfiles
   const suspendido = tenantData?.status === 'suspended'
+  // Cuentas de Google sin teléfono (Google no lo entrega en el login) —
+  // se les pide una sola vez antes de dejarlas pasar, así todas las
+  // cuentas terminan con nombre, email y teléfono, sin importar cómo se
+  // registraron.
+  const faltaTelefono = !suspendido && !!tenantData && !tenantData.telefono
 
   useEffect(() => {
     if (!listo) return
     if (!user) { router.replace('/login'); return }
+    if (faltaTelefono) { router.replace('/completar-perfil'); return }
     if (!suspendido && !perfilActivo) router.replace('/perfiles')
-  }, [listo, user, perfilActivo, suspendido, router])
+  }, [listo, user, perfilActivo, suspendido, faltaTelefono, router])
 
-  if (!listo || !user || (!suspendido && !perfilActivo)) {
+  if (!listo || !user || faltaTelefono || (!suspendido && !perfilActivo)) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f172a' }}>
         <div style={{

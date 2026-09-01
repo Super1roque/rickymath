@@ -11,14 +11,16 @@ import EstilosJuego from '@/components/guia/EstilosJuego'
 import Ricky from '@/components/guia/Ricky'
 
 export default function PerfilesPage() {
-  const { user, loading: authLoading } = useAuth()
+  const { user, tenantData, loading: authLoading } = useAuth()
   const { perfiles, cargando, seleccionarPerfil } = usePerfil()
   const router = useRouter()
   const [editando, setEditando] = useState<Perfil | 'nuevo' | null>(null)
 
   useEffect(() => {
-    if (!authLoading && !user) router.replace('/login')
-  }, [authLoading, user, router])
+    if (authLoading) return
+    if (!user) { router.replace('/login'); return }
+    if (tenantData && !tenantData.telefono) router.replace('/completar-perfil')
+  }, [authLoading, user, tenantData, router])
 
   function elegir(perfil: Perfil) {
     seleccionarPerfil(perfil)
