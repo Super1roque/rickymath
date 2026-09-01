@@ -40,7 +40,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       clearTimeout(timeoutId)
       setUser(u)
       if (u) {
-        setTenantData(await getTenant(u.uid))
+        let tenant = await getTenant(u.uid)
+        if (!tenant) {
+          // Cuentas creadas antes de que existiera este doc (o que por lo
+          // que sea nunca lo tuvieron) — se autocompleta con lo que ya
+          // sabe Firebase Auth, así no quedan invisibles para el panel de
+          // superadmin para siempre.
+          await crearTenantSiNoExiste(u.uid, {
+            nombre: u.displayName ?? '', email: u.email ?? '', telefono: '',
+          })
+          tenant = await getTenant(u.uid)
+        }
+        setTenantData(tenant)
       } else {
         setTenantData(null)
       }
