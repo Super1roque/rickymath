@@ -166,6 +166,10 @@ function TarjetaModulo({ numero, datos, color }: { numero: number; datos: Progre
     ? fecha.toLocaleDateString('es-HN', { day: 'numeric', month: 'short' })
     : null
 
+  const incorrectas = Math.max(datos.total - datos.correctas, 0)
+  const porcentaje = datos.total > 0 ? Math.round((datos.correctas / datos.total) * 100) : 0
+  const colorPorcentaje = porcentaje >= 80 ? '#4ade80' : porcentaje >= 50 ? '#fbbf24' : '#f87171'
+
   return (
     <div style={{
       borderRadius: 16, padding: '0.85rem', background: 'rgba(255,255,255,0.08)',
@@ -175,10 +179,33 @@ function TarjetaModulo({ numero, datos, color }: { numero: number; datos: Progre
       <div style={{ fontSize: '0.8rem', marginTop: '0.3rem', fontWeight: 700 }}>
         {datos.correctas}/{datos.total} correctas
       </div>
-      <div style={{ fontSize: '0.78rem', marginTop: '0.15rem', opacity: 0.85 }}>
-        ⭐ mejor: {datos.mejorPuntaje} pts · 🔥 mejor racha: {datos.mejorRachaHistorica}
+
+      {/* Barra buenas/malas — el % de al lado es lo comparable entre
+          módulos, ya que no todos tienen la misma cantidad de preguntas. */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.4rem' }}>
+        <div style={{
+          flex: 1, height: 8, borderRadius: 999, overflow: 'hidden', display: 'flex',
+          background: 'rgba(255,255,255,0.12)',
+        }}>
+          {datos.correctas > 0 && (
+            <div style={{ width: `${(datos.correctas / datos.total) * 100}%`, background: '#4ade80' }} />
+          )}
+          {incorrectas > 0 && (
+            <div style={{ width: `${(incorrectas / datos.total) * 100}%`, background: '#f87171' }} />
+          )}
+        </div>
+        <span style={{ fontSize: '0.78rem', fontWeight: 800, color: colorPorcentaje, whiteSpace: 'nowrap' }}>
+          {porcentaje}%
+        </span>
       </div>
-      <div style={{ fontSize: '0.72rem', marginTop: '0.3rem', opacity: 0.6 }}>
+
+      <div style={{ fontSize: '0.78rem', marginTop: '0.45rem', opacity: 0.85, fontWeight: 700 }}>
+        ⭐ mejor: {datos.mejorPuntaje} pts
+      </div>
+      <div style={{ fontSize: '0.78rem', marginTop: '0.15rem', opacity: 0.85, fontWeight: 700 }}>
+        🔥 mejor racha: {datos.mejorRachaHistorica}
+      </div>
+      <div style={{ fontSize: '0.72rem', marginTop: '0.35rem', opacity: 0.6 }}>
         {datos.intentos} {datos.intentos === 1 ? 'intento' : 'intentos'}{fechaTexto ? ` · ${fechaTexto}` : ''}
       </div>
     </div>
