@@ -16,6 +16,8 @@ function mensajeError(codigo: string): string {
 }
 
 export default function SignupPage() {
+  const [nombre, setNombre] = useState('')
+  const [telefono, setTelefono] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -33,7 +35,7 @@ export default function SignupPage() {
     setError('')
     setLoading(true)
     try {
-      await signup(email, password)
+      await signup(email, password, nombre, telefono)
       router.replace('/grados')
     } catch (err) {
       const codigo = (err as { code?: string }).code ?? ''
@@ -77,6 +79,16 @@ export default function SignupPage() {
         </p>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          <input
+            type="text" required placeholder="Nombre del padre/tutor" value={nombre}
+            onChange={e => setNombre(e.target.value)}
+            style={inputStyle}
+          />
+          <input
+            type="tel" required placeholder="Teléfono" value={telefono}
+            onChange={e => setTelefono(e.target.value)}
+            style={inputStyle}
+          />
           <input
             type="email" required placeholder="Email" value={email}
             onChange={e => setEmail(e.target.value)}

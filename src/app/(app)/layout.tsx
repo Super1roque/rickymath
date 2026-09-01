@@ -6,19 +6,20 @@ import { useAuth } from '@/contexts/AuthContext'
 import { usePerfil } from '@/contexts/PerfilContext'
 
 export default function AppGroupLayout({ children }: { children: React.ReactNode }) {
-  const { user, loading, logout } = useAuth()
+  const { user, tenantData, loading, logout } = useAuth()
   const { perfilActivo, cargando: cargandoPerfiles, cambiarPerfil } = usePerfil()
   const router = useRouter()
 
   const listo = !loading && !cargandoPerfiles
+  const suspendido = tenantData?.status === 'suspended'
 
   useEffect(() => {
     if (!listo) return
     if (!user) { router.replace('/login'); return }
-    if (!perfilActivo) router.replace('/perfiles')
-  }, [listo, user, perfilActivo, router])
+    if (!suspendido && !perfilActivo) router.replace('/perfiles')
+  }, [listo, user, perfilActivo, suspendido, router])
 
-  if (!listo || !user || !perfilActivo) {
+  if (!listo || !user || (!suspendido && !perfilActivo)) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f172a' }}>
         <div style={{
@@ -30,6 +31,31 @@ export default function AppGroupLayout({ children }: { children: React.ReactNode
       </div>
     )
   }
+
+  if (suspendido) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f172a', color: 'white', padding: '1.5rem', textAlign: 'center' }}>
+        <div style={{ maxWidth: 360 }}>
+          <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>🔒</div>
+          <h1 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '0.5rem' }}>Cuenta suspendida</h1>
+          <p style={{ opacity: 0.75, fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+            Esta cuenta no tiene acceso por ahora. Si creés que es un error, contactanos.
+          </p>
+          <button
+            onClick={() => logout().then(() => router.replace('/login'))}
+            style={{
+              padding: '0.7rem 1.5rem', borderRadius: 999, border: 'none', cursor: 'pointer',
+              background: 'rgba(255,255,255,0.1)', color: 'white', fontWeight: 700, fontSize: '0.85rem',
+            }}
+          >
+            Cerrar sesión
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (!perfilActivo) return null
 
   return (
     <>
