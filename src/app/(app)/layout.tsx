@@ -72,43 +72,62 @@ export default function AppGroupLayout({ children }: { children: React.ReactNode
       {children}
       <div style={{
         position: 'fixed', top: 12, right: 12, zIndex: 50,
-        display: 'flex', alignItems: 'center', gap: '0.4rem',
-        background: 'rgba(15, 23, 42, 0.55)', borderRadius: 999, padding: '0.35rem 0.5rem 0.35rem 0.7rem',
-        backdropFilter: 'blur(4px)', color: 'white', fontSize: '0.8rem', fontWeight: 700,
+        display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.3rem',
       }}>
-        <button
-          onClick={() => { cambiarPerfil(); router.push('/perfiles') }}
-          title="Cambiar de perfil"
-          style={{
-            background: 'none', border: 'none', color: 'white', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', gap: '0.35rem', fontFamily: 'inherit',
-            fontSize: '0.8rem', fontWeight: 700, padding: '0.2rem 0.3rem',
-          }}
-        >
-          <span style={{ fontSize: '1.1rem' }}>{perfilActivo.cara}</span>
-          {perfilActivo.nombre}
-        </button>
-        <span style={{ opacity: 0.4 }}>|</span>
-        <button
-          onClick={() => router.push('/progreso')}
-          title="Ver progreso (para padres)"
-          style={{
-            background: 'none', border: 'none', color: 'rgba(255,255,255,0.75)', cursor: 'pointer',
-            fontFamily: 'inherit', fontSize: '0.85rem', fontWeight: 700, padding: '0.2rem 0.3rem',
-          }}
-        >
-          📊
-        </button>
-        <span style={{ opacity: 0.4 }}>|</span>
-        <button
-          onClick={() => logout().then(() => router.replace('/login'))}
-          style={{
-            background: 'none', border: 'none', color: 'rgba(255,255,255,0.75)', cursor: 'pointer',
-            fontFamily: 'inherit', fontSize: '0.75rem', fontWeight: 700, padding: '0.2rem 0.3rem',
-          }}
-        >
-          Salir
-        </button>
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '0.35rem',
+          background: 'rgba(15, 23, 42, 0.5)', borderRadius: 999, padding: '0.25rem 0.7rem',
+          backdropFilter: 'blur(4px)', color: 'rgba(255,255,255,0.85)', fontSize: '0.7rem', fontWeight: 700,
+        }}>
+          <span>👤 {tenantData?.nombre || tenantData?.email || ''}</span>
+          <span style={{
+            padding: '0.05rem 0.45rem', borderRadius: 999, fontSize: '0.65rem', fontWeight: 800,
+            background: tenantData?.plan === 'premium' ? 'rgba(251,191,36,0.25)' : 'rgba(255,255,255,0.12)',
+            color: tenantData?.plan === 'premium' ? '#fbbf24' : 'rgba(255,255,255,0.7)',
+          }}>
+            {tenantData?.plan === 'premium' ? '⭐ Premium' : 'Free'}
+          </span>
+        </div>
+
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '0.4rem',
+          background: 'rgba(15, 23, 42, 0.55)', borderRadius: 999, padding: '0.35rem 0.5rem 0.35rem 0.7rem',
+          backdropFilter: 'blur(4px)', color: 'white', fontSize: '0.8rem', fontWeight: 700,
+        }}>
+          <button
+            onClick={() => { cambiarPerfil(); router.push('/perfiles') }}
+            title="Cambiar de perfil"
+            style={{
+              background: 'none', border: 'none', color: 'white', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: '0.35rem', fontFamily: 'inherit',
+              fontSize: '0.8rem', fontWeight: 700, padding: '0.2rem 0.3rem',
+            }}
+          >
+            <span style={{ fontSize: '1.1rem' }}>{perfilActivo.cara}</span>
+            {perfilActivo.nombre}
+          </button>
+          <span style={{ opacity: 0.4 }}>|</span>
+          <button
+            onClick={() => router.push('/progreso')}
+            title="Ver progreso (para padres)"
+            style={{
+              background: 'none', border: 'none', color: 'rgba(255,255,255,0.75)', cursor: 'pointer',
+              fontFamily: 'inherit', fontSize: '0.85rem', fontWeight: 700, padding: '0.2rem 0.3rem',
+            }}
+          >
+            📊
+          </button>
+          <span style={{ opacity: 0.4 }}>|</span>
+          <button
+            onClick={() => logout().then(() => router.replace('/login'))}
+            style={{
+              background: 'none', border: 'none', color: 'rgba(255,255,255,0.75)', cursor: 'pointer',
+              fontFamily: 'inherit', fontSize: '0.75rem', fontWeight: 700, padding: '0.2rem 0.3rem',
+            }}
+          >
+            Salir
+          </button>
+        </div>
       </div>
     </>
   )

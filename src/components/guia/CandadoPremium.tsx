@@ -11,7 +11,7 @@ export default function CandadoPremium() {
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 70,
-      background: 'rgba(15, 23, 42, 0.55)', backdropFilter: 'blur(1.5px)',
+      background: 'rgba(15, 23, 42, 0.35)', backdropFilter: 'blur(0.5px)',
       display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem',
     }}>
       <div style={{
