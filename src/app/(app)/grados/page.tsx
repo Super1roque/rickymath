@@ -8,6 +8,45 @@ import Ricky from '@/components/guia/Ricky'
 import { useAuth } from '@/contexts/AuthContext'
 import { esGradoGratis } from '@/lib/platform'
 
+// Mensaje cálido y sin sonar a venta — el gancho de "gratis" baja la
+// fricción de que la otra persona lo pruebe de una. La URL se agrega
+// aparte (no acá adentro) porque navigator.share la maneja como campo
+// propio; el fallback a WhatsApp sí la concatena al texto.
+const MENSAJE_COMPARTIR = '¡Hola! 👋 Sé que tenés niños en edad escolar y pensé en vos — te comparto RickyMath, una app para que practiquen matemáticas jugando (temática de bloques). Primero y Tablas son gratis, ¡probala!'
+
+async function compartirApp() {
+  const url = window.location.origin
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: 'RickyMath', text: MENSAJE_COMPARTIR, url })
+    } catch {
+      // El usuario canceló el selector — no hace falta avisar nada.
+    }
+    return
+  }
+  // Sin Web Share API (la mayoría de navegadores de escritorio) — directo
+  // a WhatsApp, el canal que de verdad usa esta audiencia.
+  window.open(`https://wa.me/?text=${encodeURIComponent(`${MENSAJE_COMPARTIR} ${url}`)}`, '_blank')
+}
+
+function BotonCompartir() {
+  return (
+    <button
+      onClick={compartirApp}
+      className="gj-boton-3d"
+      style={{
+        display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
+        padding: '0.85rem 1.5rem', borderRadius: 999, border: 'none', cursor: 'pointer',
+        background: 'linear-gradient(180deg, #22c55e, #14532d)', color: 'white',
+        fontFamily: 'inherit', fontWeight: 800, fontSize: '1rem',
+        ['--gj-sombra' as string]: '#14532d', boxShadow: '0 5px 0 #14532d',
+      }}
+    >
+      📤 Compartir RickyMath
+    </button>
+  )
+}
+
 // Hub de nivel superior — arriba de primero-menu/segundo-menu/tercero-menu.
 // El botón de cada grado es un número gigante con relieve 3D (texto
 // apilado en capas de sombra, no blur — el mismo truco "de bloque" que un
@@ -228,6 +267,10 @@ export default function Grados() {
             onClick={() => irAGrado(g)}
           />
         ))}
+      </div>
+
+      <div style={{ textAlign: 'center', padding: '2rem 1rem 0' }}>
+        <BotonCompartir />
       </div>
     </div>
   )
