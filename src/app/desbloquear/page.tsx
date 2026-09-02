@@ -108,15 +108,16 @@ export default function DesbloquearPage() {
           rel="noopener noreferrer"
           className="gj-boton-3d"
           style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-            padding: '0.9rem 1rem', borderRadius: 16, border: 'none', cursor: 'pointer', textDecoration: 'none',
-            fontFamily: 'inherit', fontSize: '1rem', fontWeight: 800, color: 'white', width: '100%',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', textAlign: 'center',
+            padding: '0.9rem 1.1rem', borderRadius: 16, border: 'none', cursor: 'pointer', textDecoration: 'none',
+            fontFamily: 'inherit', fontSize: '0.92rem', fontWeight: 800, color: 'white', width: '100%',
+            lineHeight: 1.35,
             background: 'linear-gradient(180deg, #22c55e, #14532d)',
             ['--gj-sombra' as string]: '#14532d', boxShadow: '0 6px 0 #14532d',
             boxSizing: 'border-box',
           }}
         >
-          ✅ Ya transferí, avisar por WhatsApp
+          💬 Chatear con el Creador de RickyMath para avisarle que ya Transferí o hacerle consultas
         </a>
 
         <Link href="/grados" style={{
