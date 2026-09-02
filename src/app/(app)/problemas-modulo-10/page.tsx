@@ -13,6 +13,7 @@ import Ricky, { type RickyMood } from '@/components/guia/Ricky'
 import { useAuth } from '@/contexts/AuthContext'
 import { usePerfil } from '@/contexts/PerfilContext'
 import { guardarProgresoModulo } from '@/lib/progreso'
+import CandadoPremium from '@/components/guia/CandadoPremium'
 
 // ── Datos de la actividad (basados en la hoja "Misión 10 - La misión
 // final", serie "Problemas"). Es el desafío final: junta multiplicación,
@@ -102,7 +103,7 @@ const TOTAL_PREGUNTAS = PROBLEMAS.length
 interface EstadoItem { valor: string; valor2: string; evaluado: boolean; correcto: boolean }
 
 export default function ProblemasModulo10() {
-  const { user } = useAuth()
+  const { user, tenantData } = useAuth()
   const { perfilActivo } = usePerfil()
   const [items, setItems] = useState<Record<number, EstadoItem>>(() =>
     Object.fromEntries(PROBLEMAS.map(p => [p.numero, { valor: '', valor2: '', evaluado: false, correcto: false }])),
@@ -321,6 +322,7 @@ export default function ProblemasModulo10() {
             </button>
           </div>
         )}
+        {tenantData?.plan !== 'premium' && <CandadoPremium />}
       </div>
     </div>
   )

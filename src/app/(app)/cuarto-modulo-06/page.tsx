@@ -13,6 +13,7 @@ import Ricky, { type RickyMood } from '@/components/guia/Ricky'
 import { useAuth } from '@/contexts/AuthContext'
 import { usePerfil } from '@/contexts/PerfilContext'
 import { guardarProgresoModulo } from '@/lib/progreso'
+import CandadoPremium from '@/components/guia/CandadoPremium'
 
 // ── Datos de la actividad (basados en la hoja "Actividad 6 - Decimales").
 // Dos inconsistencias de la hoja original, confirmadas a mano con el
@@ -92,7 +93,7 @@ interface EstadoComparar { seleccion: string; evaluado: boolean; correcto: boole
 interface EstadoRecta { seleccion: number | null; evaluado: boolean; correcto: boolean }
 
 export default function CuartoModulo06() {
-  const { user } = useAuth()
+  const { user, tenantData } = useAuth()
   const { perfilActivo } = usePerfil()
   const [lecturas, setLecturas] = useState<Record<number, EstadoSimple>>(() =>
     Object.fromEntries(LECTURAS.map(p => [p.numero, { valor: '', evaluado: false, correcto: false }])),
@@ -388,6 +389,7 @@ export default function CuartoModulo06() {
             </button>
           </div>
         )}
+        {tenantData?.plan !== 'premium' && <CandadoPremium />}
       </div>
     </div>
   )

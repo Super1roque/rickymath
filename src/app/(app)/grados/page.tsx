@@ -121,12 +121,10 @@ export default function Grados() {
   const { tenantData } = useAuth()
   const esPremium = tenantData?.plan === 'premium'
 
+  // Ya no bloquea la entrada al grado premium — se puede navegar y ver
+  // los módulos y las preguntas (el candado real está en cada pregunta,
+  // ver CandadoPremium), esto solo deja la marca "🔒" como aviso.
   function irAGrado(g: GradoInfo) {
-    const gratis = esGradoGratis(g.slug.replace('-menu', ''))
-    if (!gratis && !esPremium) {
-      router.push('/desbloquear')
-      return
-    }
     reproducirCorrecto()
     setTimeout(() => router.push(`/${g.slug}`), 220)
   }

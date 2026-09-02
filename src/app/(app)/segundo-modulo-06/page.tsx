@@ -13,6 +13,7 @@ import Ricky, { type RickyMood } from '@/components/guia/Ricky'
 import { useAuth } from '@/contexts/AuthContext'
 import { usePerfil } from '@/contexts/PerfilContext'
 import { guardarProgresoModulo } from '@/lib/progreso'
+import CandadoPremium from '@/components/guia/CandadoPremium'
 
 // ── Datos de la actividad (basados en la hoja "Actividad 6 - Secuencias Numéricas") ──
 // Los números y el patrón de figuras salen directo de la hoja (impresos),
@@ -112,7 +113,7 @@ interface EstadoPregunta {
 const ESTADO_INICIAL: EstadoPregunta = { valor: '', evaluado: false, correcto: false }
 
 export default function SegundoModulo06() {
-  const { user } = useAuth()
+  const { user, tenantData } = useAuth()
   const { perfilActivo } = usePerfil()
   const [secuencias, setSecuencias] = useState<Record<number, EstadoSecuencia>>(() =>
     Object.fromEntries(SECUENCIAS.map(p => [p.numero, { ...ESTADO_SECUENCIA_INICIAL, valores: ['', '', ''] as [string, string, string] }])),
@@ -378,6 +379,7 @@ export default function SegundoModulo06() {
             </button>
           </div>
         )}
+        {tenantData?.plan !== 'premium' && <CandadoPremium />}
       </div>
     </div>
   )

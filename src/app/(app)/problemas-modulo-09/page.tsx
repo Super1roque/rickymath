@@ -13,6 +13,7 @@ import Ricky, { type RickyMood } from '@/components/guia/Ricky'
 import { useAuth } from '@/contexts/AuthContext'
 import { usePerfil } from '@/contexts/PerfilContext'
 import { guardarProgresoModulo } from '@/lib/progreso'
+import CandadoPremium from '@/components/guia/CandadoPremium'
 
 // ── Datos de la actividad (basados en la hoja "Misión 09 - La torre del
 // Fin", serie "Problemas"). Todos los ítems son de volumen: prismas,
@@ -98,7 +99,7 @@ const TOTAL_PREGUNTAS = PROBLEMAS.length
 interface EstadoItem { valor: string; evaluado: boolean; correcto: boolean }
 
 export default function ProblemasModulo09() {
-  const { user } = useAuth()
+  const { user, tenantData } = useAuth()
   const { perfilActivo } = usePerfil()
   const [items, setItems] = useState<Record<number, EstadoItem>>(() =>
     Object.fromEntries(PROBLEMAS.map(p => [p.numero, { valor: '', evaluado: false, correcto: false }])),
@@ -294,6 +295,7 @@ export default function ProblemasModulo09() {
             </button>
           </div>
         )}
+        {tenantData?.plan !== 'premium' && <CandadoPremium />}
       </div>
     </div>
   )

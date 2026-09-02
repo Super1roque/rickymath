@@ -13,6 +13,7 @@ import Ricky, { type RickyMood } from '@/components/guia/Ricky'
 import { useAuth } from '@/contexts/AuthContext'
 import { usePerfil } from '@/contexts/PerfilContext'
 import { guardarProgresoModulo } from '@/lib/progreso'
+import CandadoPremium from '@/components/guia/CandadoPremium'
 
 // ── Datos de la actividad (basados en la hoja "Actividad 10 - Misión Final: Resolución de Problemas") ──
 // A diferencia de fracciones/ángulos/gráficos, acá la clave sale entera del
@@ -121,7 +122,7 @@ interface EstadoPregunta {
 const ESTADO_INICIAL: EstadoPregunta = { valor: '', evaluado: false, correcto: false }
 
 export default function TerceroModulo10() {
-  const { user } = useAuth()
+  const { user, tenantData } = useAuth()
   const { perfilActivo } = usePerfil()
   const [respuestas, setRespuestas] = useState<Record<string, EstadoPregunta>>(() =>
     Object.fromEntries(PROBLEMAS.flatMap(p => p.respuestas.map(r => [idResp(p.numero, r.etiqueta), { ...ESTADO_INICIAL }]))),
@@ -368,6 +369,7 @@ export default function TerceroModulo10() {
             </button>
           </div>
         )}
+        {tenantData?.plan !== 'premium' && <CandadoPremium />}
       </div>
     </div>
   )

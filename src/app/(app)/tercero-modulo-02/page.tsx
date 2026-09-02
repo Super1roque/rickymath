@@ -13,6 +13,7 @@ import Ricky, { type RickyMood } from '@/components/guia/Ricky'
 import { useAuth } from '@/contexts/AuthContext'
 import { usePerfil } from '@/contexts/PerfilContext'
 import { guardarProgresoModulo } from '@/lib/progreso'
+import CandadoPremium from '@/components/guia/CandadoPremium'
 
 // ── Datos de la actividad (basados en la hoja "Actividad 2 - División") ──
 
@@ -102,7 +103,7 @@ const ESTADO_DIV_INICIAL: EstadoDiv = { cociente: '', resto: '', evaluado: false
 const ESTADO_COMPLETA_INICIAL: EstadoCompleta = { valor: '', evaluado: false, correcto: false }
 
 export default function TerceroModulo02() {
-  const { user } = useAuth()
+  const { user, tenantData } = useAuth()
   const { perfilActivo } = usePerfil()
   const [div, setDiv] = useState<Record<number, EstadoDiv>>(() =>
     Object.fromEntries(DIVISIONES.map(p => [p.numero, { ...ESTADO_DIV_INICIAL }])),
@@ -350,6 +351,7 @@ export default function TerceroModulo02() {
             </button>
           </div>
         )}
+        {tenantData?.plan !== 'premium' && <CandadoPremium />}
       </div>
     </div>
   )

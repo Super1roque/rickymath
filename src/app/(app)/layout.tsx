@@ -1,16 +1,14 @@
 'use client'
 
 import { useEffect } from 'react'
-import { useRouter, usePathname } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { usePerfil } from '@/contexts/PerfilContext'
-import { esGradoGratis, gradoDeRuta } from '@/lib/platform'
 
 export default function AppGroupLayout({ children }: { children: React.ReactNode }) {
   const { user, tenantData, loading, logout } = useAuth()
   const { perfilActivo, cargando: cargandoPerfiles, cambiarPerfil } = usePerfil()
   const router = useRouter()
-  const pathname = usePathname()
 
   const listo = !loading && !cargandoPerfiles
   const suspendido = tenantData?.status === 'suspended'
@@ -19,21 +17,19 @@ export default function AppGroupLayout({ children }: { children: React.ReactNode
   // cuentas terminan con nombre, email y teléfono, sin importar cómo se
   // registraron.
   const faltaTelefono = !suspendido && !!tenantData && !tenantData.telefono
-  // Bloquea el acceso directo por URL a un grado premium (no alcanza con
-  // el gate de /grados, que un usuario puede saltarse tipeando la URL o
-  // con el botón atrás del navegador).
-  const grado = gradoDeRuta(pathname)
-  const rutaBloqueada = !suspendido && !faltaTelefono && !!grado && !esGradoGratis(grado) && tenantData?.plan !== 'premium'
+  // El contenido premium ya NO se bloquea acá por ruta — se puede entrar
+  // y ver el módulo (para que el padre vea qué tipo de ejercicio es), el
+  // candado va sobre las preguntas mismas (ver CandadoPremium en cada
+  // módulo).
 
   useEffect(() => {
     if (!listo) return
     if (!user) { router.replace('/login'); return }
     if (faltaTelefono) { router.replace('/completar-perfil'); return }
-    if (rutaBloqueada) { router.replace('/desbloquear'); return }
     if (!suspendido && !perfilActivo) router.replace('/perfiles')
-  }, [listo, user, perfilActivo, suspendido, faltaTelefono, rutaBloqueada, router])
+  }, [listo, user, perfilActivo, suspendido, faltaTelefono, router])
 
-  if (!listo || !user || faltaTelefono || rutaBloqueada || (!suspendido && !perfilActivo)) {
+  if (!listo || !user || faltaTelefono || (!suspendido && !perfilActivo)) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f172a' }}>
         <div style={{

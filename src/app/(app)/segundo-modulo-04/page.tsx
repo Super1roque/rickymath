@@ -13,6 +13,7 @@ import Ricky, { type RickyMood } from '@/components/guia/Ricky'
 import { useAuth } from '@/contexts/AuthContext'
 import { usePerfil } from '@/contexts/PerfilContext'
 import { guardarProgresoModulo } from '@/lib/progreso'
+import CandadoPremium from '@/components/guia/CandadoPremium'
 
 // ── Datos de la actividad (basados en la hoja "Actividad 4 - Multiplicación Inicial") ──
 // Grupos × cantidad por grupo confirmados a mano por el usuario mirando la
@@ -101,7 +102,7 @@ interface EstadoPregunta {
 const ESTADO_INICIAL: EstadoPregunta = { valor: '', evaluado: false, correcto: false }
 
 export default function SegundoModulo04() {
-  const { user } = useAuth()
+  const { user, tenantData } = useAuth()
   const { perfilActivo } = usePerfil()
   const [items, setItems] = useState<Record<number, EstadoMultiplicar>>(() =>
     Object.fromEntries(ITEMS.map(p => [p.numero, { ...ESTADO_MULT_INICIAL }])),
@@ -347,6 +348,7 @@ export default function SegundoModulo04() {
             </button>
           </div>
         )}
+        {tenantData?.plan !== 'premium' && <CandadoPremium />}
       </div>
     </div>
   )

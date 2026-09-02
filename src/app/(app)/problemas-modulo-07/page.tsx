@@ -13,6 +13,7 @@ import Ricky, { type RickyMood } from '@/components/guia/Ricky'
 import { useAuth } from '@/contexts/AuthContext'
 import { usePerfil } from '@/contexts/PerfilContext'
 import { guardarProgresoModulo } from '@/lib/progreso'
+import CandadoPremium from '@/components/guia/CandadoPremium'
 
 // ── Datos de la actividad (basados en la hoja "Misión 07 - El pastel de
 // la abeja", serie "Problemas"). Todos los ítems son fracciones: un
@@ -112,7 +113,7 @@ interface ValorFraccion { num: string; den: string }
 interface EstadoItem { valores: ValorFraccion[]; evaluado: boolean; correcto: boolean }
 
 export default function ProblemasModulo07() {
-  const { user } = useAuth()
+  const { user, tenantData } = useAuth()
   const { perfilActivo } = usePerfil()
   const [items, setItems] = useState<Record<number, EstadoItem>>(() =>
     Object.fromEntries(PROBLEMAS.map(p => [p.numero, { valores: p.campos.map(() => ({ num: '', den: '' })), evaluado: false, correcto: false }])),
@@ -312,6 +313,7 @@ export default function ProblemasModulo07() {
             </button>
           </div>
         )}
+        {tenantData?.plan !== 'premium' && <CandadoPremium />}
       </div>
     </div>
   )

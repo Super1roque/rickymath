@@ -13,6 +13,7 @@ import Ricky, { type RickyMood } from '@/components/guia/Ricky'
 import { useAuth } from '@/contexts/AuthContext'
 import { usePerfil } from '@/contexts/PerfilContext'
 import { guardarProgresoModulo } from '@/lib/progreso'
+import CandadoPremium from '@/components/guia/CandadoPremium'
 
 // ── Datos de la actividad (basados en la hoja "Actividad 5 - El Dinero") ──
 // A diferencia de una multiplicación suelta, acá cada respuesta sale de un
@@ -113,7 +114,7 @@ interface EstadoPregunta {
 const ESTADO_INICIAL: EstadoPregunta = { valor: '', evaluado: false, correcto: false }
 
 export default function TerceroModulo05() {
-  const { user } = useAuth()
+  const { user, tenantData } = useAuth()
   const { perfilActivo } = usePerfil()
   const [problemas, setProblemas] = useState<Record<number, EstadoPregunta>>(() =>
     Object.fromEntries(PROBLEMAS.map(p => [p.numero, { ...ESTADO_INICIAL }])),
@@ -358,6 +359,7 @@ export default function TerceroModulo05() {
             </button>
           </div>
         )}
+        {tenantData?.plan !== 'premium' && <CandadoPremium />}
       </div>
     </div>
   )

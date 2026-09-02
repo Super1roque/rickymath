@@ -13,6 +13,7 @@ import Ricky, { type RickyMood } from '@/components/guia/Ricky'
 import { useAuth } from '@/contexts/AuthContext'
 import { usePerfil } from '@/contexts/PerfilContext'
 import { guardarProgresoModulo } from '@/lib/progreso'
+import CandadoPremium from '@/components/guia/CandadoPremium'
 
 // ── Datos de la actividad (basados en la hoja "Actividad 9 - El Reloj y la
 // Hora"). Horas confirmadas a mano por el usuario mirando la hoja original:
@@ -85,7 +86,7 @@ function parsearHora(valor: string): { hora: number; minuto: number } | null {
 }
 
 export default function SegundoModulo09() {
-  const { user } = useAuth()
+  const { user, tenantData } = useAuth()
   const { perfilActivo } = usePerfil()
   const [items, setItems] = useState<Record<number, EstadoPregunta>>(() =>
     Object.fromEntries(ITEMS.map(p => [p.numero, { ...ESTADO_INICIAL }])),
@@ -322,6 +323,7 @@ export default function SegundoModulo09() {
             </button>
           </div>
         )}
+        {tenantData?.plan !== 'premium' && <CandadoPremium />}
       </div>
     </div>
   )

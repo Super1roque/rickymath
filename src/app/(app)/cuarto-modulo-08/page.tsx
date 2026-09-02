@@ -13,6 +13,7 @@ import Ricky, { type RickyMood } from '@/components/guia/Ricky'
 import { useAuth } from '@/contexts/AuthContext'
 import { usePerfil } from '@/contexts/PerfilContext'
 import { guardarProgresoModulo } from '@/lib/progreso'
+import CandadoPremium from '@/components/guia/CandadoPremium'
 
 // ── Datos de la actividad (basados en la hoja "Actividad 8 - Perímetro y
 // Área"). A diferencia de la mayoría de las hojas de esta serie, acá las
@@ -80,7 +81,7 @@ interface EstadoCompara { area: string; valla: string; evaluado: boolean; correc
 interface EstadoSimple { valor: string; evaluado: boolean; correcto: boolean }
 
 export default function CuartoModulo08() {
-  const { user } = useAuth()
+  const { user, tenantData } = useAuth()
   const { perfilActivo } = usePerfil()
   const [items, setItems] = useState<Record<number, EstadoPA>>(() =>
     Object.fromEntries(ITEMS.map(p => [p.numero, { p: '', a: '', evaluado: false, correcto: false }])),
@@ -341,6 +342,7 @@ export default function CuartoModulo08() {
             </button>
           </div>
         )}
+        {tenantData?.plan !== 'premium' && <CandadoPremium />}
       </div>
     </div>
   )

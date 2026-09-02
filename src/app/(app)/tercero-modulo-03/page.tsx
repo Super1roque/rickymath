@@ -13,6 +13,7 @@ import Ricky, { type RickyMood } from '@/components/guia/Ricky'
 import { useAuth } from '@/contexts/AuthContext'
 import { usePerfil } from '@/contexts/PerfilContext'
 import { guardarProgresoModulo } from '@/lib/progreso'
+import CandadoPremium from '@/components/guia/CandadoPremium'
 
 // ── Datos de la actividad (basados en la hoja "Actividad 3 - Tablas de Multiplicar") ──
 
@@ -101,7 +102,7 @@ function formatTiempo(ms: number): string {
 }
 
 export default function TerceroModulo03() {
-  const { user } = useAuth()
+  const { user, tenantData } = useAuth()
   const { perfilActivo } = usePerfil()
   const [dianas, setDianas] = useState<Record<number, EstadoPregunta>>(() =>
     Object.fromEntries(DIANAS.map(p => [p.numero, { ...ESTADO_INICIAL }])),
@@ -387,6 +388,7 @@ export default function TerceroModulo03() {
             </button>
           </div>
         )}
+        {tenantData?.plan !== 'premium' && <CandadoPremium />}
       </div>
     </div>
   )

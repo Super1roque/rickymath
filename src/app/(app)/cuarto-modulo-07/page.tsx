@@ -13,6 +13,7 @@ import Ricky, { type RickyMood } from '@/components/guia/Ricky'
 import { useAuth } from '@/contexts/AuthContext'
 import { usePerfil } from '@/contexts/PerfilContext'
 import { guardarProgresoModulo } from '@/lib/progreso'
+import CandadoPremium from '@/components/guia/CandadoPremium'
 
 // ── Datos de la actividad (basados en la hoja "Actividad 7 - Área"). Las
 // áreas de los 9 terrenos las confirmó el usuario a mano (contar bloques en
@@ -91,7 +92,7 @@ const TOTAL_PREGUNTAS = ITEMS.length + COMPLETAR.length
 interface EstadoSimple { valor: string; evaluado: boolean; correcto: boolean }
 
 export default function CuartoModulo07() {
-  const { user } = useAuth()
+  const { user, tenantData } = useAuth()
   const { perfilActivo } = usePerfil()
   const [items, setItems] = useState<Record<number, EstadoSimple>>(() =>
     Object.fromEntries(ITEMS.map(p => [p.numero, { valor: '', evaluado: false, correcto: false }])),
@@ -327,6 +328,7 @@ export default function CuartoModulo07() {
             </button>
           </div>
         )}
+        {tenantData?.plan !== 'premium' && <CandadoPremium />}
       </div>
     </div>
   )

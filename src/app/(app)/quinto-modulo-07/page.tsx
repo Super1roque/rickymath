@@ -13,6 +13,7 @@ import Ricky, { type RickyMood } from '@/components/guia/Ricky'
 import { useAuth } from '@/contexts/AuthContext'
 import { usePerfil } from '@/contexts/PerfilContext'
 import { guardarProgresoModulo } from '@/lib/progreso'
+import CandadoPremium from '@/components/guia/CandadoPremium'
 
 // ── Datos de la actividad (basados en la hoja "Actividad 7 - Volumen").
 // Las construcciones traen bloques ocultos marcados solo con líneas
@@ -74,7 +75,7 @@ interface EstadoItem { largo: string; ancho: string; alto: string; volumen: stri
 interface EstadoCompleta { valor: string; evaluado: boolean; correcto: boolean }
 
 export default function QuintoModulo07() {
-  const { user } = useAuth()
+  const { user, tenantData } = useAuth()
   const { perfilActivo } = usePerfil()
   const [items, setItems] = useState<Record<number, EstadoItem>>(() =>
     Object.fromEntries(ITEMS.map(p => [p.numero, { largo: '', ancho: '', alto: '', volumen: '', evaluado: false, correcto: false }])),
@@ -317,6 +318,7 @@ export default function QuintoModulo07() {
             </button>
           </div>
         )}
+        {tenantData?.plan !== 'premium' && <CandadoPremium />}
       </div>
     </div>
   )

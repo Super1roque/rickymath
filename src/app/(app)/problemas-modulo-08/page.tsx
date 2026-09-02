@@ -13,6 +13,7 @@ import Ricky, { type RickyMood } from '@/components/guia/Ricky'
 import { useAuth } from '@/contexts/AuthContext'
 import { usePerfil } from '@/contexts/PerfilContext'
 import { guardarProgresoModulo } from '@/lib/progreso'
+import CandadoPremium from '@/components/guia/CandadoPremium'
 
 // ── Datos de la actividad (basados en la hoja "Misión 08 - La tienda del
 // Nether", serie "Problemas"). Todos los ítems son porcentajes de
@@ -118,7 +119,7 @@ function aNumero(texto: string): number {
 interface EstadoItem { valores: string[]; evaluado: boolean; correcto: boolean }
 
 export default function ProblemasModulo08() {
-  const { user } = useAuth()
+  const { user, tenantData } = useAuth()
   const { perfilActivo } = usePerfil()
   const [items, setItems] = useState<Record<number, EstadoItem>>(() =>
     Object.fromEntries(PROBLEMAS.map(p => [p.numero, { valores: p.campos.map(() => ''), evaluado: false, correcto: false }])),
@@ -318,6 +319,7 @@ export default function ProblemasModulo08() {
             </button>
           </div>
         )}
+        {tenantData?.plan !== 'premium' && <CandadoPremium />}
       </div>
     </div>
   )

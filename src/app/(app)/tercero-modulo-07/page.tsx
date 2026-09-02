@@ -13,6 +13,7 @@ import Ricky, { type RickyMood } from '@/components/guia/Ricky'
 import { useAuth } from '@/contexts/AuthContext'
 import { usePerfil } from '@/contexts/PerfilContext'
 import { guardarProgresoModulo } from '@/lib/progreso'
+import CandadoPremium from '@/components/guia/CandadoPremium'
 
 // ── Datos de la actividad (basados en la hoja "Actividad 7 - Ángulos y Figuras") ──
 // Clave de respuestas confirmada a mano por el usuario mirando la hoja
@@ -113,7 +114,7 @@ const ESTADO_ANGULO_INICIAL: EstadoAngulo = { seleccion: null, evaluado: false, 
 const ESTADO_COMPLETA_INICIAL: EstadoCompleta = { valor: '', evaluado: false, correcto: false }
 
 export default function TerceroModulo07() {
-  const { user } = useAuth()
+  const { user, tenantData } = useAuth()
   const { perfilActivo } = usePerfil()
   const [angulos, setAngulos] = useState<Record<number, EstadoAngulo>>(() =>
     Object.fromEntries(ANGULOS.map(p => [p.numero, { ...ESTADO_ANGULO_INICIAL }])),
@@ -359,6 +360,7 @@ export default function TerceroModulo07() {
             </button>
           </div>
         )}
+        {tenantData?.plan !== 'premium' && <CandadoPremium />}
       </div>
     </div>
   )

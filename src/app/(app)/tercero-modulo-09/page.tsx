@@ -13,6 +13,7 @@ import Ricky, { type RickyMood } from '@/components/guia/Ricky'
 import { useAuth } from '@/contexts/AuthContext'
 import { usePerfil } from '@/contexts/PerfilContext'
 import { guardarProgresoModulo } from '@/lib/progreso'
+import CandadoPremium from '@/components/guia/CandadoPremium'
 
 // ── Datos de la actividad (basados en la hoja "Actividad 9 - Gráficos de Barras") ──
 // Alturas de barra confirmadas a mano por el usuario mirando la hoja
@@ -149,7 +150,7 @@ function idSub(numeroGrafico: number, letra: string): string {
 }
 
 export default function TerceroModulo09() {
-  const { user } = useAuth()
+  const { user, tenantData } = useAuth()
   const { perfilActivo } = usePerfil()
   const [subs, setSubs] = useState<Record<string, EstadoPregunta>>(() =>
     Object.fromEntries(GRAFICOS.flatMap(g => g.preguntas.map(p => [idSub(g.numero, p.letra), { ...ESTADO_INICIAL }]))),
@@ -423,6 +424,7 @@ export default function TerceroModulo09() {
             </button>
           </div>
         )}
+        {tenantData?.plan !== 'premium' && <CandadoPremium />}
       </div>
     </div>
   )

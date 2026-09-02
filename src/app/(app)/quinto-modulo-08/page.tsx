@@ -13,6 +13,7 @@ import Ricky, { type RickyMood } from '@/components/guia/Ricky'
 import { useAuth } from '@/contexts/AuthContext'
 import { usePerfil } from '@/contexts/PerfilContext'
 import { guardarProgresoModulo } from '@/lib/progreso'
+import CandadoPremium from '@/components/guia/CandadoPremium'
 
 // ── Datos de la actividad (basados en la hoja "Actividad 8 - Ángulos y
 // Circunferencia"). Ítems 1-6: clasificar el ángulo del monumento. Ítems
@@ -104,7 +105,7 @@ interface EstadoRotular { a: string; b: string; c: string; evaluado: boolean; co
 interface EstadoCompleta { valor: string; evaluado: boolean; correcto: boolean }
 
 export default function QuintoModulo08() {
-  const { user } = useAuth()
+  const { user, tenantData } = useAuth()
   const { perfilActivo } = usePerfil()
   const [angulos, setAngulos] = useState<Record<number, EstadoAngulo>>(() =>
     Object.fromEntries(ANGULOS.map(p => [p.numero, { seleccion: null, evaluado: false, correcto: false }])),
@@ -387,6 +388,7 @@ export default function QuintoModulo08() {
             </button>
           </div>
         )}
+        {tenantData?.plan !== 'premium' && <CandadoPremium />}
       </div>
     </div>
   )

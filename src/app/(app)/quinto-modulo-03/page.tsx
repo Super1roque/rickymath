@@ -13,6 +13,7 @@ import Ricky, { type RickyMood } from '@/components/guia/Ricky'
 import { useAuth } from '@/contexts/AuthContext'
 import { usePerfil } from '@/contexts/PerfilContext'
 import { guardarProgresoModulo } from '@/lib/progreso'
+import CandadoPremium from '@/components/guia/CandadoPremium'
 
 // ── Datos de la actividad (basados en la hoja "Actividad 3 - Operaciones
 // Combinadas con Potencias"). La hoja trae los resultados ya impresos
@@ -88,7 +89,7 @@ interface EstadoItem { valor: string; evaluado: boolean; correcto: boolean }
 interface EstadoCompleta { valor: string; evaluado: boolean; correcto: boolean }
 
 export default function QuintoModulo03() {
-  const { user } = useAuth()
+  const { user, tenantData } = useAuth()
   const { perfilActivo } = usePerfil()
   const [items, setItems] = useState<Record<number, EstadoItem>>(() =>
     Object.fromEntries(ITEMS.map(p => [p.numero, { valor: '', evaluado: false, correcto: false }])),
@@ -329,6 +330,7 @@ export default function QuintoModulo03() {
             </button>
           </div>
         )}
+        {tenantData?.plan !== 'premium' && <CandadoPremium />}
       </div>
     </div>
   )

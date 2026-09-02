@@ -13,6 +13,7 @@ import Ricky, { type RickyMood } from '@/components/guia/Ricky'
 import { useAuth } from '@/contexts/AuthContext'
 import { usePerfil } from '@/contexts/PerfilContext'
 import { guardarProgresoModulo } from '@/lib/progreso'
+import CandadoPremium from '@/components/guia/CandadoPremium'
 
 // ── Datos de la actividad (basados en la hoja "Actividad 6 - Porcentajes").
 // Ítems 1-4: porcentaje de un número. Ítem 5: problema de descuento con dos
@@ -78,7 +79,7 @@ interface EstadoDescuento { ahorra: string; paga: string; evaluado: boolean; cor
 interface EstadoCompleta { valor: string; evaluado: boolean; correcto: boolean }
 
 export default function QuintoModulo06() {
-  const { user } = useAuth()
+  const { user, tenantData } = useAuth()
   const { perfilActivo } = usePerfil()
   const [items, setItems] = useState<Record<number, EstadoItem>>(() =>
     Object.fromEntries(ITEMS.map(p => [p.numero, { valor: '', evaluado: false, correcto: false }])),
@@ -334,6 +335,7 @@ export default function QuintoModulo06() {
             </button>
           </div>
         )}
+        {tenantData?.plan !== 'premium' && <CandadoPremium />}
       </div>
     </div>
   )

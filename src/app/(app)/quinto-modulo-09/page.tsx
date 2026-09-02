@@ -13,6 +13,7 @@ import Ricky, { type RickyMood } from '@/components/guia/Ricky'
 import { useAuth } from '@/contexts/AuthContext'
 import { usePerfil } from '@/contexts/PerfilContext'
 import { guardarProgresoModulo } from '@/lib/progreso'
+import CandadoPremium from '@/components/guia/CandadoPremium'
 
 // ── Datos de la actividad (basados en la hoja "Actividad 9 - Media y
 // Estadística"). Los ítems 1 y 2 traen el paso a paso ya impreso ("Suma 36
@@ -91,7 +92,7 @@ interface EstadoSimple { valor: string; evaluado: boolean; correcto: boolean }
 interface EstadoSiNo { seleccion: 'si' | 'no' | null; evaluado: boolean; correcto: boolean }
 
 export default function QuintoModulo09() {
-  const { user } = useAuth()
+  const { user, tenantData } = useAuth()
   const { perfilActivo } = usePerfil()
   const [medias, setMedias] = useState<Record<number, EstadoSimple>>(() =>
     Object.fromEntries(MEDIAS.map(p => [p.numero, { valor: '', evaluado: false, correcto: false }])),
@@ -378,6 +379,7 @@ export default function QuintoModulo09() {
             </button>
           </div>
         )}
+        {tenantData?.plan !== 'premium' && <CandadoPremium />}
       </div>
     </div>
   )

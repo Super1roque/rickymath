@@ -13,6 +13,7 @@ import Ricky, { type RickyMood } from '@/components/guia/Ricky'
 import { useAuth } from '@/contexts/AuthContext'
 import { usePerfil } from '@/contexts/PerfilContext'
 import { guardarProgresoModulo } from '@/lib/progreso'
+import CandadoPremium from '@/components/guia/CandadoPremium'
 
 // ── Datos de la actividad (basados en la hoja "Actividad 1 - Números
 // hasta el Millón"). La tabla de la hoja trae 7 columnas (UMi, CM, DM, UM,
@@ -81,7 +82,7 @@ interface EstadoItem { digitos: string[]; escrito: string; evaluado: boolean; co
 interface EstadoCompleta { valor: string; evaluado: boolean; correcto: boolean }
 
 export default function QuintoModulo01() {
-  const { user } = useAuth()
+  const { user, tenantData } = useAuth()
   const { perfilActivo } = usePerfil()
   const [items, setItems] = useState<Record<number, EstadoItem>>(() =>
     Object.fromEntries(ITEMS.map(p => [p.numero, { digitos: p.digitos.map(() => ''), escrito: '', evaluado: false, correcto: false }])),
@@ -334,6 +335,7 @@ export default function QuintoModulo01() {
             </button>
           </div>
         )}
+        {tenantData?.plan !== 'premium' && <CandadoPremium />}
       </div>
     </div>
   )

@@ -13,6 +13,7 @@ import Ricky, { type RickyMood } from '@/components/guia/Ricky'
 import { useAuth } from '@/contexts/AuthContext'
 import { usePerfil } from '@/contexts/PerfilContext'
 import { guardarProgresoModulo } from '@/lib/progreso'
+import CandadoPremium from '@/components/guia/CandadoPremium'
 
 // ── Datos de la actividad (basados en la hoja "Actividad 3 - Múltiplos").
 // La rana salta siempre igual, pero los números bajo los nenúfares mezclan
@@ -86,7 +87,7 @@ interface EstadoCompleta { valor: string; evaluado: boolean; correcto: boolean }
 interface EstadoDoble { a: string; b: string; evaluado: boolean; correcto: boolean }
 
 export default function CuartoModulo03() {
-  const { user } = useAuth()
+  const { user, tenantData } = useAuth()
   const { perfilActivo } = usePerfil()
   const [items, setItems] = useState<Record<number, EstadoItem>>(() =>
     Object.fromEntries(ITEMS.map(p => [p.numero, { marcados: p.numeros.map(() => false), evaluado: false, correcto: false }])),
@@ -343,6 +344,7 @@ export default function CuartoModulo03() {
             </button>
           </div>
         )}
+        {tenantData?.plan !== 'premium' && <CandadoPremium />}
       </div>
     </div>
   )

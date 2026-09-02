@@ -13,6 +13,7 @@ import Ricky, { type RickyMood } from '@/components/guia/Ricky'
 import { useAuth } from '@/contexts/AuthContext'
 import { usePerfil } from '@/contexts/PerfilContext'
 import { guardarProgresoModulo } from '@/lib/progreso'
+import CandadoPremium from '@/components/guia/CandadoPremium'
 
 // ── Datos de la actividad (basados en la hoja "Actividad 8 - Medidas") ──
 // Dos tipos de pregunta en la misma hoja: equivalencia numérica (1 y 3 y 5)
@@ -140,7 +141,7 @@ const ESTADO_MEDIDA_INICIAL: EstadoMedida = { valor: '', seleccion: null, evalua
 const ESTADO_COMPLETA_INICIAL: EstadoCompleta = { valor: '', evaluado: false, correcto: false }
 
 export default function TerceroModulo08() {
-  const { user } = useAuth()
+  const { user, tenantData } = useAuth()
   const { perfilActivo } = usePerfil()
   const [medidas, setMedidas] = useState<Record<number, EstadoMedida>>(() =>
     Object.fromEntries(PREGUNTAS.map(p => [p.numero, { ...ESTADO_MEDIDA_INICIAL }])),
@@ -398,6 +399,7 @@ export default function TerceroModulo08() {
             </button>
           </div>
         )}
+        {tenantData?.plan !== 'premium' && <CandadoPremium />}
       </div>
     </div>
   )

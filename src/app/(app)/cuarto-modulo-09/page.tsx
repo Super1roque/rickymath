@@ -13,6 +13,7 @@ import Ricky, { type RickyMood } from '@/components/guia/Ricky'
 import { useAuth } from '@/contexts/AuthContext'
 import { usePerfil } from '@/contexts/PerfilContext'
 import { guardarProgresoModulo } from '@/lib/progreso'
+import CandadoPremium from '@/components/guia/CandadoPremium'
 
 // ── Datos de la actividad (basados en la hoja "Actividad 9 - Gráficos").
 // Tres puntos confirmados a mano por el usuario, sin una única lectura
@@ -143,7 +144,7 @@ function idSub(grupo: string, letra: string) {
 }
 
 export default function CuartoModulo09() {
-  const { user } = useAuth()
+  const { user, tenantData } = useAuth()
   const { perfilActivo } = usePerfil()
   const [subs, setSubs] = useState<Record<string, EstadoSub>>(() => {
     const base: Record<string, EstadoSub> = {}
@@ -446,6 +447,7 @@ export default function CuartoModulo09() {
             </button>
           </div>
         )}
+        {tenantData?.plan !== 'premium' && <CandadoPremium />}
       </div>
     </div>
   )
