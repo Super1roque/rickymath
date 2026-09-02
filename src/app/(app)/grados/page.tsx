@@ -5,6 +5,8 @@ import { fuenteJuego } from '@/lib/fuenteJuego'
 import { reproducirCorrecto } from '@/lib/guiaAudio'
 import EstilosJuego from '@/components/guia/EstilosJuego'
 import Ricky from '@/components/guia/Ricky'
+import { useAuth } from '@/contexts/AuthContext'
+import { esGradoGratis } from '@/lib/platform'
 
 // Hub de nivel superior — arriba de primero-menu/segundo-menu/tercero-menu.
 // El botón de cada grado es un número gigante con relieve 3D (texto
@@ -116,10 +118,17 @@ function PiedraFlotante({ tam, top, left, duracion, delay }: {
 
 export default function Grados() {
   const router = useRouter()
+  const { tenantData } = useAuth()
+  const esPremium = tenantData?.plan === 'premium'
 
-  function irAGrado(slug: string) {
+  function irAGrado(g: GradoInfo) {
+    const gratis = esGradoGratis(g.slug.replace('-menu', ''))
+    if (!gratis && !esPremium) {
+      router.push('/desbloquear')
+      return
+    }
     reproducirCorrecto()
-    setTimeout(() => router.push(`/${slug}`), 220)
+    setTimeout(() => router.push(`/${g.slug}`), 220)
   }
 
   return (
@@ -215,7 +224,11 @@ export default function Grados() {
         display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1.5rem',
       }}>
         {GRADOS.map((g, i) => (
-          <BotonGrado key={g.numero} g={g} indice={i} onClick={() => irAGrado(g.slug)} />
+          <BotonGrado
+            key={g.numero} g={g} indice={i}
+            bloqueado={!esPremium && !esGradoGratis(g.slug.replace('-menu', ''))}
+            onClick={() => irAGrado(g)}
+          />
         ))}
       </div>
     </div>
@@ -242,20 +255,30 @@ function Nube({ top, left, tam, duracion }: { top: string; left: string; tam: nu
   )
 }
 
-function BotonGrado({ g, indice, onClick }: { g: GradoInfo; indice: number; onClick: () => void }) {
+function BotonGrado({ g, indice, bloqueado, onClick }: { g: GradoInfo; indice: number; bloqueado: boolean; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
       className="gj-grado-boton"
       style={{
+        position: 'relative',
         animationDelay: `${indice * 0.18}s`,
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.3rem',
         padding: '1.5rem 1rem 1.2rem', borderRadius: 28, border: 'none', cursor: 'pointer',
         background: `linear-gradient(180deg, ${g.color}, ${g.colorOscuro})`,
         boxShadow: `0 8px 0 ${g.colorOscuro}, 0 8px 18px rgba(0,0,0,0.35)`,
-        color: 'white',
+        color: 'white', opacity: bloqueado ? 0.7 : 1,
       }}
     >
+      {bloqueado && (
+        <span style={{
+          position: 'absolute', top: -10, right: -10, width: 40, height: 40, borderRadius: '50%',
+          background: '#fbbf24', border: '3px solid white', boxShadow: '0 3px 0 rgba(0,0,0,0.25)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem', zIndex: 1,
+        }}>
+          🔒
+        </span>
+      )}
       <span style={{ fontSize: '1.6rem', lineHeight: 1 }}>{g.emoji}</span>
       <span style={{
         fontSize: 'clamp(3.2rem, 12vw, 4.5rem)', fontWeight: 900, lineHeight: 1,

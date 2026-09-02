@@ -16,14 +16,20 @@ service cloud.firestore {
       allow write: if false;
     }
 
-    // El doc del padre/tutor (nombre, email, teléfono, status). El dueño
-    // puede crearlo/leerlo/editarlo; el superadmin puede leer y editar
-    // cualquiera (para el panel de gestión) pero no crear ni borrar —
-    // igual que tenants en pos-saas, nunca se borra duro.
+    // El doc del padre/tutor (nombre, email, teléfono, status, plan). El
+    // dueño puede crear/leer/editar el suyo, pero NUNCA tocar `plan` ni
+    // `status` (eso solo lo cambia el superadmin, a mano, después de
+    // confirmar el pago único por WhatsApp) — si no, cualquiera con las
+    // devtools abiertas podría marcarse Premium gratis desde el cliente.
     match /usuarios/{uid} {
       allow read: if signedIn() && (request.auth.uid == uid || isSuperAdmin());
-      allow create: if signedIn() && request.auth.uid == uid;
-      allow update: if signedIn() && (request.auth.uid == uid || isSuperAdmin());
+      allow create: if signedIn() && request.auth.uid == uid
+        && request.resource.data.plan == 'free' && request.resource.data.status == 'active';
+      allow update: if signedIn() && (
+        isSuperAdmin() ||
+        (request.auth.uid == uid
+          && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['plan', 'status']))
+      );
       allow delete: if false;
     }
 

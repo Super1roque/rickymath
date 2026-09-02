@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import {
-  esSuperAdmin, subscribeTenants, actualizarTenant, cambiarStatusTenant, obtenerCantidadPerfiles, backfillTenants,
+  esSuperAdmin, subscribeTenants, actualizarTenant, cambiarStatusTenant, cambiarPlanTenant, obtenerCantidadPerfiles, backfillTenants,
   type Tenant,
 } from '@/lib/tenants'
 
@@ -128,6 +128,7 @@ export default function SuperAdminPage() {
                   <th className="px-4 py-3 font-medium">Hijos</th>
                   <th className="px-4 py-3 font-medium">Registrado</th>
                   <th className="px-4 py-3 font-medium">Estado</th>
+                  <th className="px-4 py-3 font-medium">Plan</th>
                   <th className="px-4 py-3 font-medium"></th>
                 </tr>
               </thead>
@@ -142,7 +143,7 @@ export default function SuperAdminPage() {
                 ))}
                 {filtrados.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-slate-500">
+                    <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
                       {tenants.length === 0 ? 'Todavía no hay cuentas registradas.' : 'Sin resultados.'}
                     </td>
                   </tr>
@@ -162,8 +163,10 @@ function FilaTenant({ tenant, cantidadHijos, onEditar }: {
   tenant: Tenant; cantidadHijos: number | undefined; onEditar: () => void
 }) {
   const [cambiandoStatus, setCambiandoStatus] = useState(false)
+  const [cambiandoPlan, setCambiandoPlan] = useState(false)
   const fecha = tenant.creadoEn?.toDate?.()
   const fechaTexto = fecha ? fecha.toLocaleDateString('es-HN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'
+  const esPremium = tenant.plan === 'premium'
 
   async function toggleStatus() {
     setCambiandoStatus(true)
@@ -171,6 +174,15 @@ function FilaTenant({ tenant, cantidadHijos, onEditar }: {
       await cambiarStatusTenant(tenant.uid, tenant.status === 'active' ? 'suspended' : 'active')
     } finally {
       setCambiandoStatus(false)
+    }
+  }
+
+  async function togglePlan() {
+    setCambiandoPlan(true)
+    try {
+      await cambiarPlanTenant(tenant.uid, esPremium ? 'free' : 'premium')
+    } finally {
+      setCambiandoPlan(false)
     }
   }
 
@@ -190,9 +202,26 @@ function FilaTenant({ tenant, cantidadHijos, onEditar }: {
           {tenant.status === 'active' ? 'Activo' : 'Suspendido'}
         </span>
       </td>
+      <td className="px-4 py-3">
+        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+          esPremium ? 'bg-amber-500/15 text-amber-400' : 'bg-slate-700/60 text-slate-400'
+        }`}>
+          {esPremium ? '⭐ Premium' : 'Free'}
+        </span>
+      </td>
       <td className="px-4 py-3 text-right whitespace-nowrap">
         <button onClick={onEditar} className="text-xs font-medium text-indigo-400 hover:text-indigo-300 transition mr-3">
           Editar
+        </button>
+        <button
+          onClick={togglePlan}
+          disabled={cambiandoPlan}
+          title="Marcá Premium una vez que confirmes el pago único de L. 350 por WhatsApp"
+          className={`text-xs font-medium transition disabled:opacity-50 mr-3 ${
+            esPremium ? 'text-slate-400 hover:text-slate-300' : 'text-amber-400 hover:text-amber-300'
+          }`}
+        >
+          {esPremium ? 'Volver a Free' : 'Marcar Premium'}
         </button>
         <button
           onClick={toggleStatus}

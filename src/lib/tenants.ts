@@ -5,6 +5,7 @@ import { httpsCallable } from 'firebase/functions'
 import { db, functions } from '@/lib/firebase'
 
 export type EstadoTenant = 'active' | 'suspended'
+export type EstadoPlan = 'free' | 'premium'
 
 export interface Tenant {
   uid: string
@@ -12,6 +13,7 @@ export interface Tenant {
   email: string
   telefono: string
   status: EstadoTenant
+  plan: EstadoPlan
   creadoEn: Timestamp | null
 }
 
@@ -29,6 +31,7 @@ export async function crearTenantSiNoExiste(
     email: datos.email,
     telefono: datos.telefono.trim(),
     status: 'active',
+    plan: 'free',
     creadoEn: serverTimestamp(),
   })
 }
@@ -54,6 +57,13 @@ export async function actualizarTenant(
 
 export async function cambiarStatusTenant(uid: string, status: EstadoTenant): Promise<void> {
   await updateDoc(doc(db, 'usuarios', uid), { status })
+}
+
+// Lo activa el superadmin a mano una vez que confirma la transferencia
+// por WhatsApp — mismo criterio que registrarPagoPlataforma en pos-saas,
+// pago único acá en vez de suscripción mensual.
+export async function cambiarPlanTenant(uid: string, plan: EstadoPlan): Promise<void> {
+  await updateDoc(doc(db, 'usuarios', uid), { plan })
 }
 
 export async function obtenerCantidadPerfiles(uid: string): Promise<number> {

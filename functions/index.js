@@ -77,6 +77,7 @@ exports.backfillTenants = onCall({ region: 'us-central1' }, async request => {
         email: u.email || '',
         telefono: u.phoneNumber || '',
         status: 'active',
+        plan: 'free',
         creadoEn: admin.firestore.Timestamp.fromDate(new Date(u.metadata.creationTime)),
       })
       creados++
