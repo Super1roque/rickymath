@@ -80,7 +80,9 @@ export default function SuperAdminPage() {
   const filtrados = tenants.filter(t => {
     const q = busqueda.trim().toLowerCase()
     if (!q) return true
-    return t.nombre.toLowerCase().includes(q) || t.email.toLowerCase().includes(q) || t.telefono.includes(q)
+    return (t.nombre ?? '').toLowerCase().includes(q)
+      || (t.email ?? '').toLowerCase().includes(q)
+      || (t.telefono ?? '').includes(q)
   })
 
   return (
@@ -238,9 +240,9 @@ function FilaTenant({ tenant, cantidadHijos, onEditar }: {
 }
 
 function ModalEditar({ tenant, onCerrar }: { tenant: Tenant; onCerrar: () => void }) {
-  const [nombre, setNombre] = useState(tenant.nombre)
-  const [email, setEmail] = useState(tenant.email)
-  const [telefono, setTelefono] = useState(tenant.telefono)
+  const [nombre, setNombre] = useState(tenant.nombre ?? '')
+  const [email, setEmail] = useState(tenant.email ?? '')
+  const [telefono, setTelefono] = useState(tenant.telefono ?? '')
   const [guardando, setGuardando] = useState(false)
 
   async function guardar() {
