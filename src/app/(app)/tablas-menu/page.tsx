@@ -78,7 +78,7 @@ export default function TablasMenu() {
           Tablas de Multiplicar
         </h1>
         <p style={{ opacity: 0.85, marginTop: '0.5rem', fontSize: '1.05rem', fontWeight: 600 }}>
-          Bonus — elegí una tabla para practicar
+          Elegí una tabla para practicar
         </p>
       </div>
 

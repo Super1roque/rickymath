@@ -70,7 +70,7 @@ const GRADOS: GradoInfo[] = [
   { numero: 3, slug: 'tercero-menu', nombre: 'Tercero', emoji: '💎', color: '#7c3aed', colorOscuro: '#1e1b4b' },
   { numero: 4, slug: 'cuarto-menu', nombre: 'Cuarto', emoji: '🏆', color: '#b45309', colorOscuro: '#78350f' },
   { numero: 5, slug: 'quinto-menu', nombre: 'Quinto', emoji: '👑', color: '#ca8a04', colorOscuro: '#713f12' },
-  { numero: 6, slug: 'tablas-menu', nombre: 'Bonus', emoji: '✖️', color: '#db2777', colorOscuro: '#831843', simbolo: '★' },
+  { numero: 6, slug: 'tablas-menu', nombre: 'Tablas', emoji: '✖️', color: '#db2777', colorOscuro: '#831843', simbolo: '★' },
   { numero: 7, slug: 'problemas-menu', nombre: 'Problemas', emoji: '🧩', color: '#16a34a', colorOscuro: '#14532d', simbolo: '?' },
 ]
 
