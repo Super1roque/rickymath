@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
 import { PRECIO_PREMIUM, DATOS_PAGO } from '@/lib/platform'
+import { trackMetaPixel } from '@/lib/metaPixel'
 import { fuenteJuego } from '@/lib/fuenteJuego'
 import EstilosJuego from '@/components/guia/EstilosJuego'
 import Ricky from '@/components/guia/Ricky'
@@ -106,6 +107,7 @@ export default function DesbloquearPage() {
           href={waUrl}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={() => trackMetaPixel('InitiateCheckout', { value: PRECIO_PREMIUM, currency: 'HNL' })}
           className="gj-boton-3d"
           style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', textAlign: 'center',

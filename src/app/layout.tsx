@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { PerfilProvider } from '@/contexts/PerfilContext'
 import RegisterServiceWorker from '@/components/RegisterServiceWorker'
+import MetaPixel from '@/components/MetaPixel'
 import './globals.css'
 
 const DESCRIPCION = 'Matemáticas en el Mundo de los Bloques — guías interactivas de primero a quinto grado, tablas de multiplicar y problemas, temática Minecraft con Ricky.'
@@ -35,6 +36,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <PerfilProvider>{children}</PerfilProvider>
         </AuthProvider>
         <RegisterServiceWorker />
+        <MetaPixel />
       </body>
     </html>
   )

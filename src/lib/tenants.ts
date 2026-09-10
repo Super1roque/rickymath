@@ -3,6 +3,7 @@ import {
 } from 'firebase/firestore'
 import { httpsCallable } from 'firebase/functions'
 import { db, functions } from '@/lib/firebase'
+import { trackMetaPixel } from '@/lib/metaPixel'
 
 export type EstadoTenant = 'active' | 'suspended'
 export type EstadoPlan = 'free' | 'premium'
@@ -34,6 +35,7 @@ export async function crearTenantSiNoExiste(
     plan: 'free',
     creadoEn: serverTimestamp(),
   })
+  trackMetaPixel('CompleteRegistration')
 }
 
 export async function getTenant(uid: string): Promise<Tenant | null> {

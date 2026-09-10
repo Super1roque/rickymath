@@ -12,6 +12,23 @@ import {
 } from 'firebase/auth'
 import { auth } from '@/lib/firebase'
 import { crearTenantSiNoExiste, getTenant, type Tenant } from '@/lib/tenants'
+import { trackMetaPixel } from '@/lib/metaPixel'
+import { PRECIO_PREMIUM } from '@/lib/platform'
+
+// El superadmin activa el plan premium a mano desde SU navegador al
+// confirmar el pago por WhatsApp — el evento "Purchase" del pixel no puede
+// dispararse ahí (quedaría atribuido a la sesión del admin, no a la de
+// quien pagó). En cambio, se dispara UNA sola vez desde el navegador del
+// propio comprador, la primera vez que ve su cuenta ya en premium.
+function trackPurchaseSiEsNuevo(uid: string, plan: Tenant['plan']): void {
+  if (plan !== 'premium' || typeof window === 'undefined') return
+  const key = `rm_purchase_tracked_${uid}`
+  try {
+    if (localStorage.getItem(key)) return
+    localStorage.setItem(key, '1')
+  } catch { return }
+  trackMetaPixel('Purchase', { value: PRECIO_PREMIUM, currency: 'HNL' })
+}
 
 interface AuthContextType {
   user: User | null
@@ -67,6 +84,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             tenant = await getTenant(u.uid)
           }
           setTenantData(tenant)
+          if (tenant) trackPurchaseSiEsNuevo(u.uid, tenant.plan)
         } else {
           setTenantData(null)
         }
@@ -86,7 +104,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   async function refreshTenant() {
-    if (user) setTenantData(await getTenant(user.uid))
+    if (!user) return
+    const tenant = await getTenant(user.uid)
+    setTenantData(tenant)
+    if (tenant) trackPurchaseSiEsNuevo(user.uid, tenant.plan)
   }
 
   async function login(email: string, password: string) {
