@@ -8,6 +8,7 @@ import BotonExplicar from '@/components/guia/BotonExplicar'
 import BotonMenu from '@/components/guia/BotonMenu'
 import EstilosJuego from '@/components/guia/EstilosJuego'
 import Confetti from '@/components/guia/Confetti'
+import { useExplosion } from '@/components/guia/ExplosionContext'
 import BarraProgreso from '@/components/guia/BarraProgreso'
 import Ricky, { type RickyMood } from '@/components/guia/Ricky'
 import { useAuth } from '@/contexts/AuthContext'
@@ -194,48 +195,50 @@ export default function QuintoModulo09() {
   }, [terminado, user, perfilActivo, totalCorrectas, puntos, mejorRacha])
 
 
-  function comprobarMedia(p: ItemMedia) {
+  const disparar = useExplosion()
+
+  function comprobarMedia(p: ItemMedia, boton: HTMLButtonElement) {
     const actual = medias[p.numero]
     if (actual.evaluado || actual.valor.trim() === '') return
     const correcto = Number(actual.valor.trim()) === p.media
-    if (correcto) reproducirCorrecto(); else reproducirIncorrecto()
+    if (correcto) { reproducirCorrecto(); disparar(String(p.media), boton.getBoundingClientRect()) } else reproducirIncorrecto()
     registrarResultado(correcto)
     reaccionarRicky(correcto)
     setMedias(prev => ({ ...prev, [p.numero]: { ...prev[p.numero], evaluado: true, correcto } }))
   }
 
-  function comprobarGrafico() {
+  function comprobarGrafico(boton: HTMLButtonElement) {
     if (grafico.evaluado || grafico.valor.trim() === '') return
     const correcto = Number(grafico.valor.trim()) === MEDIA_GRAFICO
-    if (correcto) reproducirCorrecto(); else reproducirIncorrecto()
+    if (correcto) { reproducirCorrecto(); disparar(String(MEDIA_GRAFICO), boton.getBoundingClientRect()) } else reproducirIncorrecto()
     registrarResultado(correcto)
     reaccionarRicky(correcto)
     setGrafico(prev => ({ ...prev, evaluado: true, correcto }))
   }
 
-  function comprobarModa() {
+  function comprobarModa(boton: HTMLButtonElement) {
     if (moda.evaluado || moda.valor.trim() === '') return
     const correcto = Number(moda.valor.trim()) === MODA
-    if (correcto) reproducirCorrecto(); else reproducirIncorrecto()
+    if (correcto) { reproducirCorrecto(); disparar(String(MODA), boton.getBoundingClientRect()) } else reproducirIncorrecto()
     registrarResultado(correcto)
     reaccionarRicky(correcto)
     setModa(prev => ({ ...prev, evaluado: true, correcto }))
   }
 
-  function comprobarSiNo() {
+  function comprobarSiNo(boton: HTMLButtonElement) {
     if (siNo.evaluado || siNo.seleccion === null) return
     const correcto = siNo.seleccion === SI_NO.correcta
-    if (correcto) reproducirCorrecto(); else reproducirIncorrecto()
+    if (correcto) { reproducirCorrecto(); disparar(siNo.seleccion.toUpperCase(), boton.getBoundingClientRect()) } else reproducirIncorrecto()
     registrarResultado(correcto)
     reaccionarRicky(correcto)
     setSiNo(prev => ({ ...prev, evaluado: true, correcto }))
   }
 
-  function comprobarCompleta(p: PreguntaCompleta) {
+  function comprobarCompleta(p: PreguntaCompleta, boton: HTMLButtonElement) {
     const actual = completa[p.numero]
     if (actual.evaluado || actual.valor.trim() === '') return
     const correcto = p.aceptables.map(normalizarTexto).includes(normalizarTexto(actual.valor.trim()))
-    if (correcto) reproducirCorrecto(); else reproducirIncorrecto()
+    if (correcto) { reproducirCorrecto(); disparar(actual.valor.trim(), boton.getBoundingClientRect()) } else reproducirIncorrecto()
     registrarResultado(correcto)
     reaccionarRicky(correcto)
     setCompleta(prev => ({ ...prev, [p.numero]: { ...prev[p.numero], evaluado: true, correcto } }))
@@ -309,20 +312,20 @@ export default function QuintoModulo09() {
           {MEDIAS.map((p, i) => (
             <TarjetaMedia key={p.numero} p={p} estado={medias[p.numero]} color={COLORES[i % COLORES.length]}
               onCambiar={valor => setMedias(prev => ({ ...prev, [p.numero]: { ...prev[p.numero], valor } }))}
-              onComprobar={() => comprobarMedia(p)} onExplicarEstado={reaccionarRickyExplicar} />
+              onComprobar={boton => comprobarMedia(p, boton)} onExplicarEstado={reaccionarRickyExplicar} />
           ))}
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem' }}>
           <TarjetaGrafico estado={grafico} color={COLORES[2 % COLORES.length]}
             onCambiar={valor => setGrafico(prev => ({ ...prev, valor }))}
-            onComprobar={comprobarGrafico} onExplicarEstado={reaccionarRickyExplicar} />
+            onComprobar={boton => comprobarGrafico(boton)} onExplicarEstado={reaccionarRickyExplicar} />
           <TarjetaModa estado={moda} color={COLORES[3 % COLORES.length]}
             onCambiar={valor => setModa(prev => ({ ...prev, valor }))}
-            onComprobar={comprobarModa} onExplicarEstado={reaccionarRickyExplicar} />
+            onComprobar={boton => comprobarModa(boton)} onExplicarEstado={reaccionarRickyExplicar} />
           <TarjetaSiNo estado={siNo} color={COLORES[4 % COLORES.length]}
             onSeleccionar={valor => setSiNo(prev => (prev.evaluado ? prev : { ...prev, seleccion: valor }))}
-            onComprobar={comprobarSiNo} onExplicarEstado={reaccionarRickyExplicar} />
+            onComprobar={boton => comprobarSiNo(boton)} onExplicarEstado={reaccionarRickyExplicar} />
         </div>
 
         <div style={{
@@ -336,7 +339,7 @@ export default function QuintoModulo09() {
             {COMPLETAR.map(p => (
               <FilaCompleta key={p.numero} p={p} estado={completa[p.numero]}
                 onCambiar={valor => setCompleta(prev => ({ ...prev, [p.numero]: { ...prev[p.numero], valor } }))}
-                onComprobar={() => comprobarCompleta(p)} onExplicarEstado={reaccionarRickyExplicar} />
+                onComprobar={boton => comprobarCompleta(p, boton)} onExplicarEstado={reaccionarRickyExplicar} />
             ))}
           </div>
         </div>
@@ -451,14 +454,15 @@ function TarjetaMedia({ p, estado, color, onCambiar, onComprobar, onExplicarEsta
   estado: EstadoSimple
   color: string
   onCambiar: (valor: string) => void
-  onComprobar: () => void
+  onComprobar: (boton: HTMLButtonElement) => void
   onExplicarEstado: (estado: 'idle' | 'cargando' | 'error') => void
 }) {
   const bordeColor = estado.evaluado ? (estado.correcto ? '#22c55e' : '#ef4444') : color
   const suma = p.datos.reduce((s, n) => s + n, 0)
+  const botonRef = useRef<HTMLButtonElement>(null)
 
   function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter' && estado.valor.trim() !== '') onComprobar()
+    if (e.key === 'Enter' && estado.valor.trim() !== '' && botonRef.current) onComprobar(botonRef.current)
   }
 
   return (
@@ -500,7 +504,7 @@ function TarjetaMedia({ p, estado, color, onCambiar, onComprobar, onExplicarEsta
 
       {!estado.evaluado && (
         <div style={{ display: 'flex', justifyContent: 'center', marginTop: '0.7rem' }}>
-          <button onClick={onComprobar} disabled={estado.valor.trim() === ''} style={{
+          <button ref={botonRef} onClick={e => onComprobar(e.currentTarget)} disabled={estado.valor.trim() === ''} style={{
             padding: '0.5rem 1.2rem', borderRadius: 12, border: 'none', cursor: estado.valor.trim() === '' ? 'default' : 'pointer',
             background: estado.valor.trim() === '' ? '#e2e8f0' : '#22c55e',
             boxShadow: estado.valor.trim() === '' ? 'none' : '0 3px 0 #15803d',
@@ -550,14 +554,15 @@ function TarjetaGrafico({ estado, color, onCambiar, onComprobar, onExplicarEstad
   estado: EstadoSimple
   color: string
   onCambiar: (valor: string) => void
-  onComprobar: () => void
+  onComprobar: (boton: HTMLButtonElement) => void
   onExplicarEstado: (estado: 'idle' | 'cargando' | 'error') => void
 }) {
   const bordeColor = estado.evaluado ? (estado.correcto ? '#22c55e' : '#ef4444') : color
   const suma = GRAFICO.reduce((s, d) => s + d.valor, 0)
+  const botonRef = useRef<HTMLButtonElement>(null)
 
   function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter' && estado.valor.trim() !== '') onComprobar()
+    if (e.key === 'Enter' && estado.valor.trim() !== '' && botonRef.current) onComprobar(botonRef.current)
   }
 
   return (
@@ -600,7 +605,7 @@ function TarjetaGrafico({ estado, color, onCambiar, onComprobar, onExplicarEstad
 
       {!estado.evaluado && (
         <div style={{ display: 'flex', justifyContent: 'center', marginTop: '0.7rem' }}>
-          <button onClick={onComprobar} disabled={estado.valor.trim() === ''} style={{
+          <button ref={botonRef} onClick={e => onComprobar(e.currentTarget)} disabled={estado.valor.trim() === ''} style={{
             padding: '0.5rem 1.2rem', borderRadius: 12, border: 'none', cursor: estado.valor.trim() === '' ? 'default' : 'pointer',
             background: estado.valor.trim() === '' ? '#e2e8f0' : '#22c55e',
             boxShadow: estado.valor.trim() === '' ? 'none' : '0 3px 0 #15803d',
@@ -629,13 +634,14 @@ function TarjetaModa({ estado, color, onCambiar, onComprobar, onExplicarEstado }
   estado: EstadoSimple
   color: string
   onCambiar: (valor: string) => void
-  onComprobar: () => void
+  onComprobar: (boton: HTMLButtonElement) => void
   onExplicarEstado: (estado: 'idle' | 'cargando' | 'error') => void
 }) {
   const bordeColor = estado.evaluado ? (estado.correcto ? '#22c55e' : '#ef4444') : color
+  const botonRef = useRef<HTMLButtonElement>(null)
 
   function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter' && estado.valor.trim() !== '') onComprobar()
+    if (e.key === 'Enter' && estado.valor.trim() !== '' && botonRef.current) onComprobar(botonRef.current)
   }
 
   return (
@@ -678,7 +684,7 @@ function TarjetaModa({ estado, color, onCambiar, onComprobar, onExplicarEstado }
 
       {!estado.evaluado && (
         <div style={{ display: 'flex', justifyContent: 'center', marginTop: '0.7rem' }}>
-          <button onClick={onComprobar} disabled={estado.valor.trim() === ''} style={{
+          <button ref={botonRef} onClick={e => onComprobar(e.currentTarget)} disabled={estado.valor.trim() === ''} style={{
             padding: '0.5rem 1.2rem', borderRadius: 12, border: 'none', cursor: estado.valor.trim() === '' ? 'default' : 'pointer',
             background: estado.valor.trim() === '' ? '#e2e8f0' : '#22c55e',
             boxShadow: estado.valor.trim() === '' ? 'none' : '0 3px 0 #15803d',
@@ -707,7 +713,7 @@ function TarjetaSiNo({ estado, color, onSeleccionar, onComprobar, onExplicarEsta
   estado: EstadoSiNo
   color: string
   onSeleccionar: (valor: 'si' | 'no') => void
-  onComprobar: () => void
+  onComprobar: (boton: HTMLButtonElement) => void
   onExplicarEstado: (estado: 'idle' | 'cargando' | 'error') => void
 }) {
   const bordeColor = estado.evaluado ? (estado.correcto ? '#22c55e' : '#ef4444') : color
@@ -757,7 +763,7 @@ function TarjetaSiNo({ estado, color, onSeleccionar, onComprobar, onExplicarEsta
 
       {!estado.evaluado && (
         <div style={{ display: 'flex', justifyContent: 'center', marginTop: '0.8rem' }}>
-          <button onClick={onComprobar} disabled={estado.seleccion === null} style={{
+          <button onClick={e => onComprobar(e.currentTarget)} disabled={estado.seleccion === null} style={{
             padding: '0.5rem 1.2rem', borderRadius: 12, border: 'none', cursor: estado.seleccion === null ? 'default' : 'pointer',
             background: estado.seleccion === null ? '#e2e8f0' : '#22c55e',
             boxShadow: estado.seleccion === null ? 'none' : '0 3px 0 #15803d',
@@ -786,11 +792,12 @@ function FilaCompleta({ p, estado, onCambiar, onComprobar, onExplicarEstado }: {
   p: PreguntaCompleta
   estado: EstadoSimple
   onCambiar: (valor: string) => void
-  onComprobar: () => void
+  onComprobar: (boton: HTMLButtonElement) => void
   onExplicarEstado: (estado: 'idle' | 'cargando' | 'error') => void
 }) {
+  const botonRef = useRef<HTMLButtonElement>(null)
   function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter') onComprobar()
+    if (e.key === 'Enter' && botonRef.current) onComprobar(botonRef.current)
   }
 
   const borde = estado.evaluado ? (estado.correcto ? '#22c55e' : '#ef4444') : '#cbd5e1'
@@ -818,7 +825,7 @@ function FilaCompleta({ p, estado, onCambiar, onComprobar, onExplicarEstado }: {
       />
       <span style={{ fontSize: '1.05rem', fontWeight: 600, color: '#1e293b' }}>{p.despues}</span>
       {!estado.evaluado ? (
-        <button onClick={onComprobar} disabled={estado.valor.trim() === ''} style={{
+        <button ref={botonRef} onClick={e => onComprobar(e.currentTarget)} disabled={estado.valor.trim() === ''} style={{
           marginLeft: 'auto', padding: '0.45rem 0.9rem', borderRadius: 10, border: 'none', cursor: 'pointer',
           background: estado.valor.trim() === '' ? '#e2e8f0' : '#22c55e',
           boxShadow: estado.valor.trim() === '' ? 'none' : '0 3px 0 #15803d',

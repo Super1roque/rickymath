@@ -8,6 +8,7 @@ import BotonExplicar from '@/components/guia/BotonExplicar'
 import BotonMenu from '@/components/guia/BotonMenu'
 import EstilosJuego from '@/components/guia/EstilosJuego'
 import Confetti from '@/components/guia/Confetti'
+import { useExplosion } from '@/components/guia/ExplosionContext'
 import BarraProgreso from '@/components/guia/BarraProgreso'
 import Ricky, { type RickyMood } from '@/components/guia/Ricky'
 import { useAuth } from '@/contexts/AuthContext'
@@ -168,11 +169,13 @@ export default function PrimeroModulo02() {
   }, [terminado, user, perfilActivo, totalCorrectas, puntos, mejorRacha])
 
 
-  function comprobarOrden(p: PreguntaOrdenar) {
+  const disparar = useExplosion()
+
+  function comprobarOrden(p: PreguntaOrdenar, boton: HTMLButtonElement) {
     const actual = ordenar[p.numero]
     if (actual.evaluado || actual.valores.some(v => v.trim() === '')) return
     const correcto = p.pasos.every((paso, i) => Number(actual.valores[i].trim()) === paso.correcta)
-    if (correcto) reproducirCorrecto(); else reproducirIncorrecto()
+    if (correcto) { reproducirCorrecto(); disparar(actual.valores.join('-'), boton.getBoundingClientRect()) } else reproducirIncorrecto()
     registrarResultado(correcto)
     reaccionarRicky(correcto)
     setOrdenar(prev => ({ ...prev, [p.numero]: { ...prev[p.numero], evaluado: true, correcto } }))
@@ -244,7 +247,7 @@ export default function PrimeroModulo02() {
                 valores[indice] = valor
                 return { ...prev, [p.numero]: { ...prev[p.numero], valores } }
               })}
-              onComprobar={() => comprobarOrden(p)} onExplicarEstado={reaccionarRickyExplicar} />
+              onComprobar={boton => comprobarOrden(p, boton)} onExplicarEstado={reaccionarRickyExplicar} />
           ))}
         </div>
 
@@ -296,14 +299,15 @@ function TarjetaOrdenar({ p, estado, color, onCambiar, onComprobar, onExplicarEs
   estado: EstadoOrdenar
   color: string
   onCambiar: (indice: number, valor: string) => void
-  onComprobar: () => void
+  onComprobar: (boton: HTMLButtonElement) => void
   onExplicarEstado: (estado: 'idle' | 'cargando' | 'error') => void
 }) {
   const listo = estado.valores.every(v => v.trim() !== '')
   const bordeColor = estado.evaluado ? (estado.correcto ? '#22c55e' : '#ef4444') : color
+  const botonRef = useRef<HTMLButtonElement>(null)
 
   function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter' && listo) onComprobar()
+    if (e.key === 'Enter' && listo && botonRef.current) onComprobar(botonRef.current)
   }
 
   return (
@@ -353,7 +357,7 @@ function TarjetaOrdenar({ p, estado, color, onCambiar, onComprobar, onExplicarEs
       </div>
 
       {!estado.evaluado && (
-        <button onClick={onComprobar} disabled={!listo} style={{
+        <button ref={botonRef} onClick={e => onComprobar(e.currentTarget)} disabled={!listo} style={{
           width: '100%', marginTop: '0.7rem', padding: '0.55rem', borderRadius: 12, border: 'none', cursor: 'pointer',
           background: !listo ? '#e2e8f0' : '#22c55e',
           boxShadow: !listo ? 'none' : '0 3px 0 #15803d',

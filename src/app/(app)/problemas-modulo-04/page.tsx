@@ -8,6 +8,7 @@ import BotonExplicar from '@/components/guia/BotonExplicar'
 import BotonMenu from '@/components/guia/BotonMenu'
 import EstilosJuego from '@/components/guia/EstilosJuego'
 import Confetti from '@/components/guia/Confetti'
+import { useExplosion } from '@/components/guia/ExplosionContext'
 import BarraProgreso from '@/components/guia/BarraProgreso'
 import Ricky, { type RickyMood } from '@/components/guia/Ricky'
 import { useAuth } from '@/contexts/AuthContext'
@@ -181,13 +182,15 @@ export default function ProblemasModulo04() {
   }, [terminado, user, perfilActivo, totalCorrectas, puntos, mejorRacha])
 
 
-  function comprobarItem(p: Problema) {
+  const disparar = useExplosion()
+
+  function comprobarItem(p: Problema, boton: HTMLButtonElement) {
     const actual = items[p.numero]
     if (actual.evaluado) return
     if (p.resto !== undefined) {
       if (actual.valor.trim() === '' || actual.valor2.trim() === '') return
       const correcto = Number(actual.valor.trim()) === p.resultado && Number(actual.valor2.trim()) === p.resto
-      if (correcto) reproducirCorrecto(); else reproducirIncorrecto()
+      if (correcto) { reproducirCorrecto(); disparar(`${p.resultado} y ${p.resto}`, boton.getBoundingClientRect()) } else reproducirIncorrecto()
       registrarResultado(correcto)
       reaccionarRicky(correcto)
       setItems(prev => ({ ...prev, [p.numero]: { ...prev[p.numero], evaluado: true, correcto } }))
@@ -195,7 +198,7 @@ export default function ProblemasModulo04() {
     }
     if (actual.valor.trim() === '') return
     const correcto = Number(actual.valor.trim()) === p.resultado
-    if (correcto) reproducirCorrecto(); else reproducirIncorrecto()
+    if (correcto) { reproducirCorrecto(); disparar(String(p.resultado), boton.getBoundingClientRect()) } else reproducirIncorrecto()
     registrarResultado(correcto)
     reaccionarRicky(correcto)
     setItems(prev => ({ ...prev, [p.numero]: { ...prev[p.numero], evaluado: true, correcto } }))
@@ -266,7 +269,7 @@ export default function ProblemasModulo04() {
             <TarjetaProblema key={p.numero} p={p} estado={items[p.numero]} color={COLORES[i % COLORES.length]}
               onCambiar={valor => setItems(prev => ({ ...prev, [p.numero]: { ...prev[p.numero], valor } }))}
               onCambiar2={valor2 => setItems(prev => ({ ...prev, [p.numero]: { ...prev[p.numero], valor2 } }))}
-              onComprobar={() => comprobarItem(p)} onExplicarEstado={reaccionarRickyExplicar} />
+              onComprobar={boton => comprobarItem(p, boton)} onExplicarEstado={reaccionarRickyExplicar} />
           ))}
         </div>
 
@@ -369,15 +372,16 @@ function TarjetaProblema({ p, estado, color, onCambiar, onCambiar2, onComprobar,
   color: string
   onCambiar: (valor: string) => void
   onCambiar2: (valor: string) => void
-  onComprobar: () => void
+  onComprobar: (boton: HTMLButtonElement) => void
   onExplicarEstado: (estado: 'idle' | 'cargando' | 'error') => void
 }) {
   const bordeColor = estado.evaluado ? (estado.correcto ? '#22c55e' : '#ef4444') : color
   const conResto = p.resto !== undefined
   const listo = conResto ? estado.valor.trim() !== '' && estado.valor2.trim() !== '' : estado.valor.trim() !== ''
+  const botonRef = useRef<HTMLButtonElement>(null)
 
   function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter' && listo) onComprobar()
+    if (e.key === 'Enter' && listo && botonRef.current) onComprobar(botonRef.current)
   }
 
   return (
@@ -435,7 +439,7 @@ function TarjetaProblema({ p, estado, color, onCambiar, onCambiar2, onComprobar,
               }}
             />
             {!estado.evaluado && (
-              <button onClick={onComprobar} disabled={!listo} style={{
+              <button ref={botonRef} onClick={e => onComprobar(e.currentTarget)} disabled={!listo} style={{
                 padding: '0.5rem 0.9rem', borderRadius: 10, border: 'none', cursor: listo ? 'pointer' : 'default',
                 background: listo ? '#22c55e' : '#e2e8f0',
                 boxShadow: listo ? '0 3px 0 #15803d' : 'none',
@@ -463,7 +467,7 @@ function TarjetaProblema({ p, estado, color, onCambiar, onCambiar2, onComprobar,
             }}
           />
           {!estado.evaluado && (
-            <button onClick={onComprobar} disabled={!listo} style={{
+            <button ref={botonRef} onClick={e => onComprobar(e.currentTarget)} disabled={!listo} style={{
               padding: '0.5rem 0.9rem', borderRadius: 10, border: 'none', cursor: listo ? 'pointer' : 'default',
               background: listo ? '#22c55e' : '#e2e8f0',
               boxShadow: listo ? '0 3px 0 #15803d' : 'none',

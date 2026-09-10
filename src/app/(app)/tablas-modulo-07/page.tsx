@@ -8,6 +8,7 @@ import BotonExplicar from '@/components/guia/BotonExplicar'
 import BotonMenu from '@/components/guia/BotonMenu'
 import EstilosJuego from '@/components/guia/EstilosJuego'
 import Confetti from '@/components/guia/Confetti'
+import { useExplosion } from '@/components/guia/ExplosionContext'
 import BarraProgreso from '@/components/guia/BarraProgreso'
 import Ricky, { type RickyMood } from '@/components/guia/Ricky'
 import { useAuth } from '@/contexts/AuthContext'
@@ -128,11 +129,13 @@ export default function TablasModulo07() {
   }, [terminado, user, perfilActivo, totalCorrectas, puntos, mejorRacha])
 
 
-  function comprobarItem(p: ItemPractica) {
+  const disparar = useExplosion()
+
+  function comprobarItem(p: ItemPractica, boton: HTMLButtonElement) {
     const actual = items[p.numero]
     if (actual.evaluado || actual.valor.trim() === '') return
     const correcto = Number(actual.valor.trim()) === p.resultado
-    if (correcto) reproducirCorrecto(); else reproducirIncorrecto()
+    if (correcto) { reproducirCorrecto(); disparar(String(p.resultado), boton.getBoundingClientRect()) } else reproducirIncorrecto()
     registrarResultado(correcto)
     reaccionarRicky(correcto)
     setItems(prev => ({ ...prev, [p.numero]: { ...prev[p.numero], evaluado: true, correcto } }))
@@ -207,7 +210,7 @@ export default function TablasModulo07() {
           {PRACTICA.map(p => (
             <TarjetaPractica key={p.numero} p={p} estado={items[p.numero]}
               onCambiar={valor => setItems(prev => ({ ...prev, [p.numero]: { ...prev[p.numero], valor } }))}
-              onComprobar={() => comprobarItem(p)} onExplicarEstado={reaccionarRickyExplicar} />
+              onComprobar={boton => comprobarItem(p, boton)} onExplicarEstado={reaccionarRickyExplicar} />
           ))}
         </div>
 
@@ -329,13 +332,14 @@ function TarjetaPractica({ p, estado, onCambiar, onComprobar, onExplicarEstado }
   p: ItemPractica
   estado: EstadoItem
   onCambiar: (valor: string) => void
-  onComprobar: () => void
+  onComprobar: (boton: HTMLButtonElement) => void
   onExplicarEstado: (estado: 'idle' | 'cargando' | 'error') => void
 }) {
   const bordeColor = estado.evaluado ? (estado.correcto ? '#22c55e' : '#ef4444') : COLOR
+  const botonRef = useRef<HTMLButtonElement>(null)
 
   function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter' && estado.valor.trim() !== '') onComprobar()
+    if (e.key === 'Enter' && estado.valor.trim() !== '' && botonRef.current) onComprobar(botonRef.current)
   }
 
   return (
@@ -366,7 +370,7 @@ function TarjetaPractica({ p, estado, onCambiar, onComprobar, onExplicarEstado }
 
       {!estado.evaluado && (
         <div style={{ display: 'flex', justifyContent: 'center', marginTop: '0.6rem' }}>
-          <button onClick={onComprobar} disabled={estado.valor.trim() === ''} style={{
+          <button ref={botonRef} onClick={e => onComprobar(e.currentTarget)} disabled={estado.valor.trim() === ''} style={{
             padding: '0.45rem 1rem', borderRadius: 12, border: 'none', cursor: estado.valor.trim() === '' ? 'default' : 'pointer',
             background: estado.valor.trim() === '' ? '#e2e8f0' : '#22c55e',
             boxShadow: estado.valor.trim() === '' ? 'none' : '0 3px 0 #15803d',

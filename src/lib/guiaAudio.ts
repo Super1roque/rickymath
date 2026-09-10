@@ -95,6 +95,25 @@ let resolverAudioActual: (() => void) | null = null
 // apenas arranca — así el estado "cargando" de los botones (y el mood
 // "pensando" de Ricky) dura toda la explicación hablada, no solo el
 // fetch al servidor.
+// Deepgram lee estos símbolos matemáticos tal cual (o los ignora) en vez de
+// pronunciarlos como palabra — "×" sonaba como "equis" y "=" no se
+// escuchaba. Se reemplazan por su lectura en español antes de mandar el
+// texto a la API de voz.
+function normalizarSimbolosMatematicos(texto: string): string {
+  return texto
+    .replace(/×/g, ' por ')
+    .replace(/÷/g, ' dividido ')
+    .replace(/=/g, ' igual a ')
+    .replace(/\+/g, ' más ')
+    .replace(/−/g, ' menos ')
+    // El guion ASCII normal ("-") solo se lee como resta cuando está entre
+    // dígitos (p. ej. "43 - 12") — así no se toca si alguna vez aparece en
+    // una palabra compuesta o un rango de texto.
+    .replace(/(\d)\s*-\s*(\d)/g, '$1 menos $2')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
 export async function leerTexto(texto: string): Promise<void> {
   if (typeof window === 'undefined') return
 
@@ -105,17 +124,19 @@ export async function leerTexto(texto: string): Promise<void> {
     resolverAudioActual = null
   }
 
-  let url = cacheAudio.get(texto)
+  const textoNormalizado = normalizarSimbolosMatematicos(texto)
+
+  let url = cacheAudio.get(textoNormalizado)
   if (!url) {
     const res = await fetch('/api/guia-voz', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ texto }),
+      body: JSON.stringify({ texto: textoNormalizado }),
     })
     if (!res.ok) throw new Error(`guia-voz respondió ${res.status}`)
     const blob = await res.blob()
     url = URL.createObjectURL(blob)
-    cacheAudio.set(texto, url)
+    cacheAudio.set(textoNormalizado, url)
   }
 
   const audio = new Audio(url)

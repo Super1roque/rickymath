@@ -8,6 +8,7 @@ import BotonExplicar from '@/components/guia/BotonExplicar'
 import BotonMenu from '@/components/guia/BotonMenu'
 import EstilosJuego from '@/components/guia/EstilosJuego'
 import Confetti from '@/components/guia/Confetti'
+import { useExplosion } from '@/components/guia/ExplosionContext'
 import BarraProgreso from '@/components/guia/BarraProgreso'
 import Ricky, { type RickyMood } from '@/components/guia/Ricky'
 import { useAuth } from '@/contexts/AuthContext'
@@ -206,42 +207,44 @@ export default function QuintoModulo08() {
   }, [terminado, user, perfilActivo, totalCorrectas, puntos, mejorRacha])
 
 
-  function comprobarAngulo(p: ItemAngulo) {
+  const disparar = useExplosion()
+
+  function comprobarAngulo(p: ItemAngulo, boton: HTMLButtonElement) {
     const actual = angulos[p.numero]
     if (actual.evaluado || actual.seleccion === null) return
     const correcto = actual.seleccion === p.clasificacion
-    if (correcto) reproducirCorrecto(); else reproducirIncorrecto()
+    if (correcto) { reproducirCorrecto(); disparar(p.clasificacion, boton.getBoundingClientRect()) } else reproducirIncorrecto()
     registrarResultado(correcto)
     reaccionarRicky(correcto)
     setAngulos(prev => ({ ...prev, [p.numero]: { ...prev[p.numero], evaluado: true, correcto } }))
   }
 
-  function comprobarCirculo(p: ItemCirculo) {
+  function comprobarCirculo(p: ItemCirculo, boton: HTMLButtonElement) {
     const actual = circulos[p.numero]
     if (actual.evaluado || actual.valor.trim() === '') return
     const correcto = Number(actual.valor.trim()) === p.resultado
-    if (correcto) reproducirCorrecto(); else reproducirIncorrecto()
+    if (correcto) { reproducirCorrecto(); disparar(String(p.resultado), boton.getBoundingClientRect()) } else reproducirIncorrecto()
     registrarResultado(correcto)
     reaccionarRicky(correcto)
     setCirculos(prev => ({ ...prev, [p.numero]: { ...prev[p.numero], evaluado: true, correcto } }))
   }
 
-  function comprobarRotular() {
+  function comprobarRotular(boton: HTMLButtonElement) {
     if (rotular.evaluado || rotular.a.trim() === '' || rotular.b.trim() === '' || rotular.c.trim() === '') return
     const correcto = ROTULAR.a.aceptables.includes(normalizarTexto(rotular.a.trim()))
       && ROTULAR.b.aceptables.includes(normalizarTexto(rotular.b.trim()))
       && ROTULAR.c.aceptables.includes(normalizarTexto(rotular.c.trim()))
-    if (correcto) reproducirCorrecto(); else reproducirIncorrecto()
+    if (correcto) { reproducirCorrecto(); disparar('✅', boton.getBoundingClientRect()) } else reproducirIncorrecto()
     registrarResultado(correcto)
     reaccionarRicky(correcto)
     setRotular(prev => ({ ...prev, evaluado: true, correcto }))
   }
 
-  function comprobarCompleta(p: PreguntaCompleta) {
+  function comprobarCompleta(p: PreguntaCompleta, boton: HTMLButtonElement) {
     const actual = completa[p.numero]
     if (actual.evaluado || actual.valor.trim() === '') return
     const correcto = p.aceptables.map(normalizarTexto).includes(normalizarTexto(actual.valor.trim()))
-    if (correcto) reproducirCorrecto(); else reproducirIncorrecto()
+    if (correcto) { reproducirCorrecto(); disparar(actual.valor.trim(), boton.getBoundingClientRect()) } else reproducirIncorrecto()
     registrarResultado(correcto)
     reaccionarRicky(correcto)
     setCompleta(prev => ({ ...prev, [p.numero]: { ...prev[p.numero], evaluado: true, correcto } }))
@@ -317,7 +320,7 @@ export default function QuintoModulo08() {
                 if (prev[p.numero].evaluado) return prev
                 return { ...prev, [p.numero]: { ...prev[p.numero], seleccion: valor } }
               })}
-              onComprobar={() => comprobarAngulo(p)} onExplicarEstado={reaccionarRickyExplicar} />
+              onComprobar={boton => comprobarAngulo(p, boton)} onExplicarEstado={reaccionarRickyExplicar} />
           ))}
         </div>
 
@@ -327,11 +330,11 @@ export default function QuintoModulo08() {
           {CIRCULOS.map((p, i) => (
             <TarjetaCirculo key={p.numero} p={p} estado={circulos[p.numero]} color={COLORES[(i + 6) % COLORES.length]}
               onCambiar={valor => setCirculos(prev => ({ ...prev, [p.numero]: { ...prev[p.numero], valor } }))}
-              onComprobar={() => comprobarCirculo(p)} onExplicarEstado={reaccionarRickyExplicar} />
+              onComprobar={boton => comprobarCirculo(p, boton)} onExplicarEstado={reaccionarRickyExplicar} />
           ))}
           <TarjetaRotular estado={rotular} color={COLORES[8 % COLORES.length]}
             onCambiar={(campo, valor) => setRotular(prev => ({ ...prev, [campo]: valor }))}
-            onComprobar={comprobarRotular} onExplicarEstado={reaccionarRickyExplicar} />
+            onComprobar={boton => comprobarRotular(boton)} onExplicarEstado={reaccionarRickyExplicar} />
         </div>
 
         <div style={{
@@ -345,7 +348,7 @@ export default function QuintoModulo08() {
             {COMPLETAR.map(p => (
               <FilaCompleta key={p.numero} p={p} estado={completa[p.numero]}
                 onCambiar={valor => setCompleta(prev => ({ ...prev, [p.numero]: { ...prev[p.numero], valor } }))}
-                onComprobar={() => comprobarCompleta(p)} onExplicarEstado={reaccionarRickyExplicar} />
+                onComprobar={boton => comprobarCompleta(p, boton)} onExplicarEstado={reaccionarRickyExplicar} />
             ))}
           </div>
         </div>
@@ -504,7 +507,7 @@ function TarjetaAngulo({ p, estado, color, onSeleccionar, onComprobar, onExplica
   estado: EstadoAngulo
   color: string
   onSeleccionar: (valor: Clasificacion) => void
-  onComprobar: () => void
+  onComprobar: (boton: HTMLButtonElement) => void
   onExplicarEstado: (estado: 'idle' | 'cargando' | 'error') => void
 }) {
   const bordeColor = estado.evaluado ? (estado.correcto ? '#22c55e' : '#ef4444') : color
@@ -533,7 +536,7 @@ function TarjetaAngulo({ p, estado, color, onSeleccionar, onComprobar, onExplica
 
       {!estado.evaluado && (
         <div style={{ display: 'flex', justifyContent: 'center', marginTop: '0.7rem' }}>
-          <button onClick={onComprobar} disabled={estado.seleccion === null} style={{
+          <button onClick={e => onComprobar(e.currentTarget)} disabled={estado.seleccion === null} style={{
             padding: '0.5rem 1.2rem', borderRadius: 12, border: 'none', cursor: estado.seleccion === null ? 'default' : 'pointer',
             background: estado.seleccion === null ? '#e2e8f0' : '#22c55e',
             boxShadow: estado.seleccion === null ? 'none' : '0 3px 0 #15803d',
@@ -584,13 +587,14 @@ function TarjetaCirculo({ p, estado, color, onCambiar, onComprobar, onExplicarEs
   estado: EstadoCirculo
   color: string
   onCambiar: (valor: string) => void
-  onComprobar: () => void
+  onComprobar: (boton: HTMLButtonElement) => void
   onExplicarEstado: (estado: 'idle' | 'cargando' | 'error') => void
 }) {
   const bordeColor = estado.evaluado ? (estado.correcto ? '#22c55e' : '#ef4444') : color
+  const botonRef = useRef<HTMLButtonElement>(null)
 
   function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter' && estado.valor.trim() !== '') onComprobar()
+    if (e.key === 'Enter' && estado.valor.trim() !== '' && botonRef.current) onComprobar(botonRef.current)
   }
 
   return (
@@ -631,7 +635,7 @@ function TarjetaCirculo({ p, estado, color, onCambiar, onComprobar, onExplicarEs
 
       {!estado.evaluado && (
         <div style={{ display: 'flex', justifyContent: 'center', marginTop: '0.7rem' }}>
-          <button onClick={onComprobar} disabled={estado.valor.trim() === ''} style={{
+          <button ref={botonRef} onClick={e => onComprobar(e.currentTarget)} disabled={estado.valor.trim() === ''} style={{
             padding: '0.5rem 1.2rem', borderRadius: 12, border: 'none', cursor: estado.valor.trim() === '' ? 'default' : 'pointer',
             background: estado.valor.trim() === '' ? '#e2e8f0' : '#22c55e',
             boxShadow: estado.valor.trim() === '' ? 'none' : '0 3px 0 #15803d',
@@ -660,14 +664,15 @@ function TarjetaRotular({ estado, color, onCambiar, onComprobar, onExplicarEstad
   estado: EstadoRotular
   color: string
   onCambiar: (campo: 'a' | 'b' | 'c', valor: string) => void
-  onComprobar: () => void
+  onComprobar: (boton: HTMLButtonElement) => void
   onExplicarEstado: (estado: 'idle' | 'cargando' | 'error') => void
 }) {
   const bordeColor = estado.evaluado ? (estado.correcto ? '#22c55e' : '#ef4444') : color
   const faltan = estado.a.trim() === '' || estado.b.trim() === '' || estado.c.trim() === ''
+  const botonRef = useRef<HTMLButtonElement>(null)
 
   function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter' && !faltan) onComprobar()
+    if (e.key === 'Enter' && !faltan && botonRef.current) onComprobar(botonRef.current)
   }
 
   const filaEstilo = {
@@ -714,7 +719,7 @@ function TarjetaRotular({ estado, color, onCambiar, onComprobar, onExplicarEstad
 
       {!estado.evaluado && (
         <div style={{ display: 'flex', justifyContent: 'center', marginTop: '0.7rem' }}>
-          <button onClick={onComprobar} disabled={faltan} style={{
+          <button ref={botonRef} onClick={e => onComprobar(e.currentTarget)} disabled={faltan} style={{
             padding: '0.5rem 1.2rem', borderRadius: 12, border: 'none', cursor: faltan ? 'default' : 'pointer',
             background: faltan ? '#e2e8f0' : '#22c55e',
             boxShadow: faltan ? 'none' : '0 3px 0 #15803d',
@@ -743,11 +748,12 @@ function FilaCompleta({ p, estado, onCambiar, onComprobar, onExplicarEstado }: {
   p: PreguntaCompleta
   estado: EstadoCompleta
   onCambiar: (valor: string) => void
-  onComprobar: () => void
+  onComprobar: (boton: HTMLButtonElement) => void
   onExplicarEstado: (estado: 'idle' | 'cargando' | 'error') => void
 }) {
+  const botonRef = useRef<HTMLButtonElement>(null)
   function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter') onComprobar()
+    if (e.key === 'Enter' && botonRef.current) onComprobar(botonRef.current)
   }
 
   const borde = estado.evaluado ? (estado.correcto ? '#22c55e' : '#ef4444') : '#5eead4'
@@ -775,7 +781,7 @@ function FilaCompleta({ p, estado, onCambiar, onComprobar, onExplicarEstado }: {
       />
       <span style={{ fontSize: '1.05rem', fontWeight: 600, color: '#134e4a' }}>{p.despues}</span>
       {!estado.evaluado ? (
-        <button onClick={onComprobar} disabled={estado.valor.trim() === ''} style={{
+        <button ref={botonRef} onClick={e => onComprobar(e.currentTarget)} disabled={estado.valor.trim() === ''} style={{
           marginLeft: 'auto', padding: '0.45rem 0.9rem', borderRadius: 10, border: 'none', cursor: 'pointer',
           background: estado.valor.trim() === '' ? '#e2e8f0' : '#22c55e',
           boxShadow: estado.valor.trim() === '' ? 'none' : '0 3px 0 #15803d',

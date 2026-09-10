@@ -8,6 +8,7 @@ import BotonExplicar from '@/components/guia/BotonExplicar'
 import BotonMenu from '@/components/guia/BotonMenu'
 import EstilosJuego from '@/components/guia/EstilosJuego'
 import Confetti from '@/components/guia/Confetti'
+import { useExplosion } from '@/components/guia/ExplosionContext'
 import BarraProgreso from '@/components/guia/BarraProgreso'
 import Ricky, { type RickyMood } from '@/components/guia/Ricky'
 import { useAuth } from '@/contexts/AuthContext'
@@ -160,11 +161,13 @@ export default function PrimeroModulo07() {
   }, [terminado, user, perfilActivo, totalCorrectas, puntos, mejorRacha])
 
 
-  function elegirOpcion(p: PreguntaLargo, opcion: Opcion) {
+  const disparar = useExplosion()
+
+  function elegirOpcion(p: PreguntaLargo, opcion: Opcion, boton: HTMLButtonElement) {
     const actual = largos[p.numero]
     if (actual.evaluado) return
     const correcto = opcion === p.correcta
-    if (correcto) reproducirCorrecto(); else reproducirIncorrecto()
+    if (correcto) { reproducirCorrecto(); disparar(p.emoji, boton.getBoundingClientRect()) } else reproducirIncorrecto()
     registrarResultado(correcto)
     reaccionarRicky(correcto)
     setLargos(prev => ({ ...prev, [p.numero]: { seleccion: opcion, evaluado: true, correcto } }))
@@ -229,7 +232,7 @@ export default function PrimeroModulo07() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem' }}>
           {ITEMS.map((p, i) => (
             <TarjetaLargo key={p.numero} p={p} estado={largos[p.numero]} color={COLORES[i % COLORES.length]}
-              onElegir={opcion => elegirOpcion(p, opcion)} onExplicarEstado={reaccionarRickyExplicar} />
+              onElegir={(opcion, boton) => elegirOpcion(p, opcion, boton)} onExplicarEstado={reaccionarRickyExplicar} />
           ))}
         </div>
 
@@ -294,7 +297,7 @@ function TarjetaLargo({ p, estado, color, onElegir, onExplicarEstado }: {
   p: PreguntaLargo
   estado: EstadoLargo
   color: string
-  onElegir: (opcion: Opcion) => void
+  onElegir: (opcion: Opcion, boton: HTMLButtonElement) => void
   onExplicarEstado: (estado: 'idle' | 'cargando' | 'error') => void
 }) {
   const bordeColor = estado.evaluado ? (estado.correcto ? '#22c55e' : '#ef4444') : color
@@ -338,7 +341,7 @@ function TarjetaLargo({ p, estado, color, onElegir, onExplicarEstado }: {
           return (
             <button
               key={opcion}
-              onClick={() => onElegir(opcion)}
+              onClick={e => onElegir(opcion, e.currentTarget)}
               disabled={estado.evaluado}
               style={{
                 flex: 1, minWidth: 0, padding: '0.7rem 0.6rem', borderRadius: 12, border: `2px solid ${borde}`,

@@ -8,6 +8,7 @@ import BotonExplicar from '@/components/guia/BotonExplicar'
 import BotonMenu from '@/components/guia/BotonMenu'
 import EstilosJuego from '@/components/guia/EstilosJuego'
 import Confetti from '@/components/guia/Confetti'
+import { useExplosion } from '@/components/guia/ExplosionContext'
 import BarraProgreso from '@/components/guia/BarraProgreso'
 import Ricky, { type RickyMood } from '@/components/guia/Ricky'
 import { useAuth } from '@/contexts/AuthContext'
@@ -204,21 +205,23 @@ export default function TerceroModulo04() {
   // cuando el usuario hace clic — dentro de un updater de setState el efecto
   // de sonido podría dispararse más de una vez (p. ej. en modo estricto de
   // desarrollo, que invoca los updaters dos veces).
-  function comprobarFraccion(p: PreguntaFraccion) {
+  const disparar = useExplosion()
+
+  function comprobarFraccion(p: PreguntaFraccion, boton: HTMLButtonElement) {
     const actual = fracciones[p.numero]
     if (actual.evaluado || actual.numerador.trim() === '' || actual.denominador.trim() === '') return
     const correcto = Number(actual.numerador.trim()) === p.numCorrecto && Number(actual.denominador.trim()) === p.denCorrecto
-    if (correcto) reproducirCorrecto(); else reproducirIncorrecto()
+    if (correcto) { reproducirCorrecto(); disparar(`${p.numCorrecto}/${p.denCorrecto}`, boton.getBoundingClientRect()) } else reproducirIncorrecto()
     registrarResultado(correcto)
     reaccionarRicky(correcto)
     setFracciones(prev => ({ ...prev, [p.numero]: { ...prev[p.numero], evaluado: true, correcto } }))
   }
 
-  function comprobarCompleta(p: PreguntaCompleta) {
+  function comprobarCompleta(p: PreguntaCompleta, boton: HTMLButtonElement) {
     const actual = completa[p.numero]
     if (actual.evaluado || actual.valor.trim() === '') return
     const correcto = p.aceptables.map(normalizarTexto).includes(normalizarTexto(actual.valor))
-    if (correcto) reproducirCorrecto(); else reproducirIncorrecto()
+    if (correcto) { reproducirCorrecto(); disparar(actual.valor.trim(), boton.getBoundingClientRect()) } else reproducirIncorrecto()
     registrarResultado(correcto)
     reaccionarRicky(correcto)
     setCompleta(prev => ({ ...prev, [p.numero]: { ...prev[p.numero], evaluado: true, correcto } }))
@@ -290,7 +293,7 @@ export default function TerceroModulo04() {
             <TarjetaFraccion key={p.numero} p={p} estado={fracciones[p.numero]} color={COLORES[i % COLORES.length]}
               onCambiarNumerador={valor => setFracciones(prev => ({ ...prev, [p.numero]: { ...prev[p.numero], numerador: valor } }))}
               onCambiarDenominador={valor => setFracciones(prev => ({ ...prev, [p.numero]: { ...prev[p.numero], denominador: valor } }))}
-              onComprobar={() => comprobarFraccion(p)} onExplicarEstado={reaccionarRickyExplicar} />
+              onComprobar={boton => comprobarFraccion(p, boton)} onExplicarEstado={reaccionarRickyExplicar} />
           ))}
         </div>
 
@@ -305,7 +308,7 @@ export default function TerceroModulo04() {
             {COMPLETAR.map(p => (
               <FilaCompleta key={p.numero} p={p} estado={completa[p.numero]}
                 onCambiar={valor => setCompleta(prev => ({ ...prev, [p.numero]: { ...prev[p.numero], valor } }))}
-                onComprobar={() => comprobarCompleta(p)} onExplicarEstado={reaccionarRickyExplicar} />
+                onComprobar={boton => comprobarCompleta(p, boton)} onExplicarEstado={reaccionarRickyExplicar} />
             ))}
           </div>
         </div>
@@ -465,11 +468,12 @@ function TarjetaFraccion({ p, estado, color, onCambiarNumerador, onCambiarDenomi
   color: string
   onCambiarNumerador: (v: string) => void
   onCambiarDenominador: (v: string) => void
-  onComprobar: () => void
+  onComprobar: (boton: HTMLButtonElement) => void
   onExplicarEstado: (estado: 'idle' | 'cargando' | 'error') => void
 }) {
   const listo = estado.numerador.trim() !== '' && estado.denominador.trim() !== ''
   const bordeColor = estado.evaluado ? (estado.correcto ? '#22c55e' : '#ef4444') : color
+  const botonRef = useRef<HTMLButtonElement>(null)
 
   return (
     <div style={{
@@ -496,10 +500,11 @@ function TarjetaFraccion({ p, estado, color, onCambiarNumerador, onCambiarDenomi
       <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', alignItems: 'center' }}>
         <EntradaFraccion
           numerador={estado.numerador} denominador={estado.denominador} deshabilitado={estado.evaluado} color={color}
-          onCambiarNumerador={onCambiarNumerador} onCambiarDenominador={onCambiarDenominador} onEnter={onComprobar}
+          onCambiarNumerador={onCambiarNumerador} onCambiarDenominador={onCambiarDenominador}
+          onEnter={() => { if (listo && botonRef.current) onComprobar(botonRef.current) }}
         />
         {!estado.evaluado && (
-          <button onClick={onComprobar} disabled={!listo} style={{
+          <button ref={botonRef} onClick={e => onComprobar(e.currentTarget)} disabled={!listo} style={{
             padding: '0.6rem 0.9rem', borderRadius: 12, border: 'none', cursor: 'pointer',
             background: !listo ? '#e2e8f0' : '#22c55e',
             boxShadow: !listo ? 'none' : '0 3px 0 #15803d',
@@ -529,11 +534,12 @@ function FilaCompleta({ p, estado, onCambiar, onComprobar, onExplicarEstado }: {
   p: PreguntaCompleta
   estado: EstadoCompleta
   onCambiar: (valor: string) => void
-  onComprobar: () => void
+  onComprobar: (boton: HTMLButtonElement) => void
   onExplicarEstado: (estado: 'idle' | 'cargando' | 'error') => void
 }) {
+  const botonRef = useRef<HTMLButtonElement>(null)
   function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter') onComprobar()
+    if (e.key === 'Enter' && botonRef.current) onComprobar(botonRef.current)
   }
 
   const borde = estado.evaluado ? (estado.correcto ? '#22c55e' : '#ef4444') : '#f9a8d4'
@@ -561,7 +567,7 @@ function FilaCompleta({ p, estado, onCambiar, onComprobar, onExplicarEstado }: {
       />
       <span style={{ fontSize: '1.05rem', fontWeight: 600, color: '#831843' }}>{p.despues}</span>
       {!estado.evaluado ? (
-        <button onClick={onComprobar} disabled={estado.valor.trim() === ''} style={{
+        <button ref={botonRef} onClick={e => onComprobar(e.currentTarget)} disabled={estado.valor.trim() === ''} style={{
           marginLeft: 'auto', padding: '0.45rem 0.9rem', borderRadius: 10, border: 'none', cursor: 'pointer',
           background: estado.valor.trim() === '' ? '#e2e8f0' : '#22c55e',
           boxShadow: estado.valor.trim() === '' ? 'none' : '0 3px 0 #15803d',

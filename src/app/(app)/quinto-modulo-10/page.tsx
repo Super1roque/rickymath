@@ -8,6 +8,7 @@ import BotonExplicar from '@/components/guia/BotonExplicar'
 import BotonMenu from '@/components/guia/BotonMenu'
 import EstilosJuego from '@/components/guia/EstilosJuego'
 import Confetti from '@/components/guia/Confetti'
+import { useExplosion } from '@/components/guia/ExplosionContext'
 import BarraProgreso from '@/components/guia/BarraProgreso'
 import Ricky, { type RickyMood } from '@/components/guia/Ricky'
 import { useAuth } from '@/contexts/AuthContext'
@@ -184,22 +185,25 @@ export default function QuintoModulo10() {
   }, [terminado, user, perfilActivo, totalCorrectas, puntos, mejorRacha])
 
 
-  function comprobarRespuesta(p: Problema, r: Respuesta) {
+  const disparar = useExplosion()
+
+  function comprobarRespuesta(p: Problema, r: Respuesta, boton: HTMLButtonElement) {
     const id = idResp(p.numero, r.etiqueta)
     const actual = respuestas[id]
     if (actual.evaluado || actual.valor.trim() === '') return
     const valorNormalizado = actual.valor.trim().replace(',', '.')
     const correcto = Number(valorNormalizado) === r.valor
-    if (correcto) reproducirCorrecto(); else reproducirIncorrecto()
+    if (correcto) { reproducirCorrecto(); disparar(String(r.valor), boton.getBoundingClientRect()) } else reproducirIncorrecto()
     registrarResultado(correcto)
     reaccionarRicky(correcto)
     setRespuestas(prev => ({ ...prev, [id]: { ...prev[id], evaluado: true, correcto } }))
   }
 
-  function elegirAutoeval(a: Autoeval, opcion: string) {
+  function elegirAutoeval(a: Autoeval, opcion: string, boton: HTMLButtonElement) {
     const actual = autoeval[a.numero]
     if (actual.evaluado) return
     reproducirCorrecto()
+    disparar(opcion, boton.getBoundingClientRect())
     registrarResultado(true)
     reaccionarRicky(true)
     setAutoeval(prev => ({ ...prev, [a.numero]: { seleccion: opcion, evaluado: true } }))
@@ -269,7 +273,7 @@ export default function QuintoModulo10() {
             <TarjetaProblema key={p.numero} p={p} color={COLORES[i % COLORES.length]}
               respuestas={respuestas}
               onCambiar={(id, valor) => setRespuestas(prev => ({ ...prev, [id]: { ...prev[id], valor } }))}
-              onComprobar={r => comprobarRespuesta(p, r)} onExplicarEstado={reaccionarRickyExplicar} />
+              onComprobar={(r, boton) => comprobarRespuesta(p, r, boton)} onExplicarEstado={reaccionarRickyExplicar} />
           ))}
         </div>
 
@@ -282,7 +286,7 @@ export default function QuintoModulo10() {
           </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
             {AUTOEVALUACION.map(a => (
-              <FilaAutoeval key={a.numero} a={a} estado={autoeval[a.numero]} onElegir={opcion => elegirAutoeval(a, opcion)} />
+              <FilaAutoeval key={a.numero} a={a} estado={autoeval[a.numero]} onElegir={(opcion, boton) => elegirAutoeval(a, opcion, boton)} />
             ))}
           </div>
         </div>
@@ -370,7 +374,7 @@ function TarjetaProblema({ p, color, respuestas, onCambiar, onComprobar, onExpli
   color: string
   respuestas: Record<string, EstadoPregunta>
   onCambiar: (id: string, valor: string) => void
-  onComprobar: (r: Respuesta) => void
+  onComprobar: (r: Respuesta, boton: HTMLButtonElement) => void
   onExplicarEstado: (estado: 'idle' | 'cargando' | 'error') => void
 }) {
   return (
@@ -397,7 +401,7 @@ function TarjetaProblema({ p, color, respuestas, onCambiar, onComprobar, onExpli
           <FilaRespuesta key={r.etiqueta} etiqueta={r.etiqueta} explicacion={r.explicacion}
             estado={respuestas[idResp(p.numero, r.etiqueta)]}
             onCambiar={valor => onCambiar(idResp(p.numero, r.etiqueta), valor)}
-            onComprobar={() => onComprobar(r)} onExplicarEstado={onExplicarEstado} />
+            onComprobar={boton => onComprobar(r, boton)} onExplicarEstado={onExplicarEstado} />
         ))}
       </div>
     </div>
@@ -409,11 +413,12 @@ function FilaRespuesta({ etiqueta, explicacion, estado, onCambiar, onComprobar, 
   explicacion: string
   estado: EstadoPregunta
   onCambiar: (valor: string) => void
-  onComprobar: () => void
+  onComprobar: (boton: HTMLButtonElement) => void
   onExplicarEstado: (estado: 'idle' | 'cargando' | 'error') => void
 }) {
+  const botonRef = useRef<HTMLButtonElement>(null)
   function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter') onComprobar()
+    if (e.key === 'Enter' && botonRef.current) onComprobar(botonRef.current)
   }
 
   const borde = estado.evaluado ? (estado.correcto ? '#22c55e' : '#ef4444') : '#c7d2fe'
@@ -439,7 +444,7 @@ function FilaRespuesta({ etiqueta, explicacion, estado, onCambiar, onComprobar, 
         }}
       />
       {!estado.evaluado ? (
-        <button onClick={onComprobar} disabled={estado.valor.trim() === ''} style={{
+        <button ref={botonRef} onClick={e => onComprobar(e.currentTarget)} disabled={estado.valor.trim() === ''} style={{
           padding: '0.5rem 0.8rem', borderRadius: 10, border: 'none', cursor: 'pointer', flexShrink: 0,
           background: estado.valor.trim() === '' ? '#e2e8f0' : '#22c55e',
           boxShadow: estado.valor.trim() === '' ? 'none' : '0 3px 0 #15803d',
@@ -463,7 +468,7 @@ function FilaRespuesta({ etiqueta, explicacion, estado, onCambiar, onComprobar, 
 function FilaAutoeval({ a, estado, onElegir }: {
   a: Autoeval
   estado: EstadoAutoeval
-  onElegir: (opcion: string) => void
+  onElegir: (opcion: string, boton: HTMLButtonElement) => void
 }) {
   const OPCIONES = [
     { valor: 'Sí', color: '#22c55e' },
@@ -481,7 +486,7 @@ function FilaAutoeval({ a, estado, onElegir }: {
         {OPCIONES.map(o => {
           const esElegida = estado.seleccion === o.valor
           return (
-            <button key={o.valor} onClick={() => onElegir(o.valor)} disabled={estado.evaluado} style={{
+            <button key={o.valor} onClick={e => onElegir(o.valor, e.currentTarget)} disabled={estado.evaluado} style={{
               padding: '0.4rem 0.6rem', borderRadius: 8, fontSize: '0.8rem', fontWeight: 800,
               border: `2px solid ${esElegida ? o.color : '#c7d2fe'}`,
               background: esElegida ? `${o.color}22` : 'white',

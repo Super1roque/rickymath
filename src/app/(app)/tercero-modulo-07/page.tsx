@@ -8,6 +8,7 @@ import BotonExplicar from '@/components/guia/BotonExplicar'
 import BotonMenu from '@/components/guia/BotonMenu'
 import EstilosJuego from '@/components/guia/EstilosJuego'
 import Confetti from '@/components/guia/Confetti'
+import { useExplosion } from '@/components/guia/ExplosionContext'
 import BarraProgreso from '@/components/guia/BarraProgreso'
 import Ricky, { type RickyMood } from '@/components/guia/Ricky'
 import { useAuth } from '@/contexts/AuthContext'
@@ -218,21 +219,23 @@ export default function TerceroModulo07() {
   // cuando el usuario hace clic — dentro de un updater de setState el efecto
   // de sonido podría dispararse más de una vez (p. ej. en modo estricto de
   // desarrollo, que invoca los updaters dos veces).
-  function elegirAngulo(p: PreguntaAngulo, opcion: TipoAngulo) {
+  const disparar = useExplosion()
+
+  function elegirAngulo(p: PreguntaAngulo, opcion: TipoAngulo, boton: HTMLButtonElement) {
     const actual = angulos[p.numero]
     if (actual.evaluado) return
     const correcto = opcion === p.correcta
-    if (correcto) reproducirCorrecto(); else reproducirIncorrecto()
+    if (correcto) { reproducirCorrecto(); disparar(opcion.toUpperCase(), boton.getBoundingClientRect()) } else reproducirIncorrecto()
     registrarResultado(correcto)
     reaccionarRicky(correcto)
     setAngulos(prev => ({ ...prev, [p.numero]: { seleccion: opcion, evaluado: true, correcto } }))
   }
 
-  function comprobarCompleta(p: PreguntaCompleta) {
+  function comprobarCompleta(p: PreguntaCompleta, boton: HTMLButtonElement) {
     const actual = completa[p.numero]
     if (actual.evaluado || actual.valor.trim() === '') return
     const correcto = p.aceptables.map(normalizarTexto).includes(normalizarTexto(actual.valor))
-    if (correcto) reproducirCorrecto(); else reproducirIncorrecto()
+    if (correcto) { reproducirCorrecto(); disparar(actual.valor.trim(), boton.getBoundingClientRect()) } else reproducirIncorrecto()
     registrarResultado(correcto)
     reaccionarRicky(correcto)
     setCompleta(prev => ({ ...prev, [p.numero]: { ...prev[p.numero], evaluado: true, correcto } }))
@@ -302,7 +305,7 @@ export default function TerceroModulo07() {
         }}>
           {ANGULOS.map((p, i) => (
             <TarjetaAngulo key={p.numero} p={p} estado={angulos[p.numero]} color={COLORES[i % COLORES.length]}
-              onElegir={opcion => elegirAngulo(p, opcion)} onExplicarEstado={reaccionarRickyExplicar} />
+              onElegir={(opcion, boton) => elegirAngulo(p, opcion, boton)} onExplicarEstado={reaccionarRickyExplicar} />
           ))}
         </div>
 
@@ -317,7 +320,7 @@ export default function TerceroModulo07() {
             {COMPLETAR.map(p => (
               <FilaCompleta key={p.numero} p={p} estado={completa[p.numero]}
                 onCambiar={valor => setCompleta(prev => ({ ...prev, [p.numero]: { ...prev[p.numero], valor } }))}
-                onComprobar={() => comprobarCompleta(p)} onExplicarEstado={reaccionarRickyExplicar} />
+                onComprobar={boton => comprobarCompleta(p, boton)} onExplicarEstado={reaccionarRickyExplicar} />
             ))}
           </div>
         </div>
@@ -459,7 +462,7 @@ function TarjetaAngulo({ p, estado, color, onElegir, onExplicarEstado }: {
   p: PreguntaAngulo
   estado: EstadoAngulo
   color: string
-  onElegir: (opcion: TipoAngulo) => void
+  onElegir: (opcion: TipoAngulo, boton: HTMLButtonElement) => void
   onExplicarEstado: (estado: 'idle' | 'cargando' | 'error') => void
 }) {
   const bordeColor = estado.evaluado ? (estado.correcto ? '#22c55e' : '#ef4444') : color
@@ -499,7 +502,7 @@ function TarjetaAngulo({ p, estado, color, onElegir, onExplicarEstado }: {
             else if (esLaCorrecta) { bg = '#dcfce7'; borde = '#86efac'; textColor = '#16a34a' }
           }
           return (
-            <button key={o.valor} onClick={() => onElegir(o.valor)} disabled={estado.evaluado} style={{
+            <button key={o.valor} onClick={e => onElegir(o.valor, e.currentTarget)} disabled={estado.evaluado} style={{
               flex: 1, minWidth: 0, padding: '0.55rem 0.2rem', borderRadius: 10, border: `2px solid ${borde}`,
               background: bg, color: textColor, fontWeight: 800, fontSize: '0.78rem',
               cursor: estado.evaluado ? 'default' : 'pointer', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
@@ -523,11 +526,12 @@ function FilaCompleta({ p, estado, onCambiar, onComprobar, onExplicarEstado }: {
   p: PreguntaCompleta
   estado: EstadoCompleta
   onCambiar: (valor: string) => void
-  onComprobar: () => void
+  onComprobar: (boton: HTMLButtonElement) => void
   onExplicarEstado: (estado: 'idle' | 'cargando' | 'error') => void
 }) {
+  const botonRef = useRef<HTMLButtonElement>(null)
   function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter') onComprobar()
+    if (e.key === 'Enter' && botonRef.current) onComprobar(botonRef.current)
   }
 
   const borde = estado.evaluado ? (estado.correcto ? '#22c55e' : '#ef4444') : '#c4b5fd'
@@ -555,7 +559,7 @@ function FilaCompleta({ p, estado, onCambiar, onComprobar, onExplicarEstado }: {
       />
       <span style={{ fontSize: '1.05rem', fontWeight: 600, color: '#4c1d95' }}>{p.despues}</span>
       {!estado.evaluado ? (
-        <button onClick={onComprobar} disabled={estado.valor.trim() === ''} style={{
+        <button ref={botonRef} onClick={e => onComprobar(e.currentTarget)} disabled={estado.valor.trim() === ''} style={{
           marginLeft: 'auto', padding: '0.45rem 0.9rem', borderRadius: 10, border: 'none', cursor: 'pointer',
           background: estado.valor.trim() === '' ? '#e2e8f0' : '#22c55e',
           boxShadow: estado.valor.trim() === '' ? 'none' : '0 3px 0 #15803d',

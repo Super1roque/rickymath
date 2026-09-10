@@ -2,22 +2,28 @@
 
 import { useState } from 'react'
 import { leerTexto } from '@/lib/guiaAudio'
+import { useExplosion } from './ExplosionContext'
 
 // Botón 🔊 compartido por las guías interactivas — pide el audio al
 // servidor (Deepgram, voz "olivia") y muestra un estado de carga mientras
 // llega, ya que a diferencia de la voz del navegador esto sí tarda un poco
-// (viaja por red). No depende de Firebase/auth.
+// (viaja por red). No depende de Firebase/auth. Al tocarlo también festeja
+// con la explosión de partículas — acá el texto suele ser una pregunta
+// entera, así que en vez de clonar la frase completa se clona solo el
+// emoji del parlante (se vería enorme y desbordado al escalar 7x).
 export default function BotonEscuchar({ texto, tamano = 32 }: { texto: string; tamano?: number }) {
   const [estado, setEstado] = useState<'idle' | 'cargando' | 'error'>('idle')
+  const disparar = useExplosion()
 
-  async function handleClick() {
+  async function handleClick(e: React.MouseEvent<HTMLButtonElement>) {
     if (estado === 'cargando') return
+    disparar('🔊', e.currentTarget.getBoundingClientRect())
     setEstado('cargando')
     try {
       await leerTexto(texto)
       setEstado('idle')
-    } catch (e) {
-      console.error('No se pudo leer la pregunta en voz alta:', e)
+    } catch (err) {
+      console.error('No se pudo leer la pregunta en voz alta:', err)
       setEstado('error')
       setTimeout(() => setEstado('idle'), 1500)
     }

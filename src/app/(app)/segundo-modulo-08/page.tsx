@@ -8,6 +8,7 @@ import BotonExplicar from '@/components/guia/BotonExplicar'
 import BotonMenu from '@/components/guia/BotonMenu'
 import EstilosJuego from '@/components/guia/EstilosJuego'
 import Confetti from '@/components/guia/Confetti'
+import { useExplosion } from '@/components/guia/ExplosionContext'
 import BarraProgreso from '@/components/guia/BarraProgreso'
 import Ricky, { type RickyMood } from '@/components/guia/Ricky'
 import { useAuth } from '@/contexts/AuthContext'
@@ -249,41 +250,43 @@ export default function SegundoModulo08() {
   }, [terminado, user, perfilActivo, totalCorrectas, puntos, mejorRacha])
 
 
-  function elegirComparar(p: PreguntaComparar, opcion: string) {
+  const disparar = useExplosion()
+
+  function elegirComparar(p: PreguntaComparar, opcion: string, boton: HTMLButtonElement) {
     const actual = comparar[p.numero]
     if (actual.evaluado) return
     const correcto = opcion === p.correcta
-    if (correcto) reproducirCorrecto(); else reproducirIncorrecto()
+    if (correcto) { reproducirCorrecto(); disparar(p.opciones.find(o => o.clave === opcion)?.emoji ?? opcion, boton.getBoundingClientRect()) } else reproducirIncorrecto()
     registrarResultado(correcto)
     reaccionarRicky(correcto)
     setComparar(prev => ({ ...prev, [p.numero]: { seleccion: opcion, evaluado: true, correcto } }))
   }
 
-  function comprobarNumerar(p: PreguntaNumerar) {
+  function comprobarNumerar(p: PreguntaNumerar, boton: HTMLButtonElement) {
     const actual = numerar[p.numero]
     if (actual.evaluado || actual.valores.some(v => v.trim() === '')) return
     const correcto = actual.valores.every((v, i) => v.trim() === p.slots[i].correcta)
-    if (correcto) reproducirCorrecto(); else reproducirIncorrecto()
+    if (correcto) { reproducirCorrecto(); disparar(p.slots.map(s => s.correcta).join(', '), boton.getBoundingClientRect()) } else reproducirIncorrecto()
     registrarResultado(correcto)
     reaccionarRicky(correcto)
     setNumerar(prev => ({ ...prev, [p.numero]: { ...prev[p.numero], evaluado: true, correcto } }))
   }
 
-  function comprobarNumero(p: PreguntaNumero) {
+  function comprobarNumero(p: PreguntaNumero, boton: HTMLButtonElement) {
     const actual = numeros[p.numero]
     if (actual.evaluado || actual.valor.trim() === '') return
     const correcto = Number(actual.valor.trim()) === p.correcta
-    if (correcto) reproducirCorrecto(); else reproducirIncorrecto()
+    if (correcto) { reproducirCorrecto(); disparar(String(p.correcta), boton.getBoundingClientRect()) } else reproducirIncorrecto()
     registrarResultado(correcto)
     reaccionarRicky(correcto)
     setNumeros(prev => ({ ...prev, [p.numero]: { ...prev[p.numero], evaluado: true, correcto } }))
   }
 
-  function comprobarCompleta(p: PreguntaCompleta) {
+  function comprobarCompleta(p: PreguntaCompleta, boton: HTMLButtonElement) {
     const actual = completa[p.numero]
     if (actual.evaluado || actual.valor.trim() === '') return
     const correcto = p.aceptables.map(normalizarTexto).includes(normalizarTexto(actual.valor))
-    if (correcto) reproducirCorrecto(); else reproducirIncorrecto()
+    if (correcto) { reproducirCorrecto(); disparar(actual.valor.trim(), boton.getBoundingClientRect()) } else reproducirIncorrecto()
     registrarResultado(correcto)
     reaccionarRicky(correcto)
     setCompleta(prev => ({ ...prev, [p.numero]: { ...prev[p.numero], evaluado: true, correcto } }))
@@ -355,7 +358,7 @@ export default function SegundoModulo08() {
         }}>
           {COMPARAR.map(p => (
             <TarjetaComparar key={p.numero} p={p} estado={comparar[p.numero]}
-              onElegir={opcion => elegirComparar(p, opcion)} onExplicarEstado={reaccionarRickyExplicar} />
+              onElegir={(opcion, boton) => elegirComparar(p, opcion, boton)} onExplicarEstado={reaccionarRickyExplicar} />
           ))}
         </div>
 
@@ -369,7 +372,7 @@ export default function SegundoModulo08() {
                 valores[i] = valor
                 return { ...prev, [p.numero]: { ...prev[p.numero], valores } }
               })}
-              onComprobar={() => comprobarNumerar(p)} onExplicarEstado={reaccionarRickyExplicar} />
+              onComprobar={boton => comprobarNumerar(p, boton)} onExplicarEstado={reaccionarRickyExplicar} />
           ))}
         </div>
 
@@ -379,7 +382,7 @@ export default function SegundoModulo08() {
           {NUMEROS.map(p => (
             <TarjetaNumero key={p.numero} p={p} estado={numeros[p.numero]}
               onCambiar={valor => setNumeros(prev => ({ ...prev, [p.numero]: { ...prev[p.numero], valor } }))}
-              onComprobar={() => comprobarNumero(p)} onExplicarEstado={reaccionarRickyExplicar} />
+              onComprobar={boton => comprobarNumero(p, boton)} onExplicarEstado={reaccionarRickyExplicar} />
           ))}
         </div>
 
@@ -394,7 +397,7 @@ export default function SegundoModulo08() {
             {COMPLETAR.map(p => (
               <FilaCompleta key={p.numero} p={p} estado={completa[p.numero]}
                 onCambiar={valor => setCompleta(prev => ({ ...prev, [p.numero]: { ...prev[p.numero], valor } }))}
-                onComprobar={() => comprobarCompleta(p)} onExplicarEstado={reaccionarRickyExplicar} />
+                onComprobar={boton => comprobarCompleta(p, boton)} onExplicarEstado={reaccionarRickyExplicar} />
             ))}
           </div>
         </div>
@@ -551,7 +554,7 @@ function TarjetaEjemplo() {
 function TarjetaComparar({ p, estado, onElegir, onExplicarEstado }: {
   p: PreguntaComparar
   estado: EstadoComparar
-  onElegir: (opcion: string) => void
+  onElegir: (opcion: string, boton: HTMLButtonElement) => void
   onExplicarEstado: (estado: 'idle' | 'cargando' | 'error') => void
 }) {
   const bordeColor = estado.evaluado ? (estado.correcto ? '#22c55e' : '#ef4444') : '#0d9488'
@@ -590,7 +593,7 @@ function TarjetaComparar({ p, estado, onElegir, onExplicarEstado }: {
             else if (esLaCorrecta) { bg = '#dcfce7'; borde = '#86efac'; textColor = '#16a34a' }
           }
           return (
-            <button key={o.clave} onClick={() => onElegir(o.clave)} disabled={estado.evaluado} style={{
+            <button key={o.clave} onClick={e => onElegir(o.clave, e.currentTarget)} disabled={estado.evaluado} style={{
               flex: 1, minWidth: 0, padding: '0.7rem 0.4rem', borderRadius: 12, border: `2px solid ${borde}`,
               background: bg, color: textColor, fontWeight: 800, fontSize: '0.95rem',
               cursor: estado.evaluado ? 'default' : 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem',
@@ -620,14 +623,15 @@ function TarjetaNumerar({ p, estado, onCambiar, onComprobar, onExplicarEstado }:
   p: PreguntaNumerar
   estado: EstadoNumerar
   onCambiar: (indice: number, valor: string) => void
-  onComprobar: () => void
+  onComprobar: (boton: HTMLButtonElement) => void
   onExplicarEstado: (estado: 'idle' | 'cargando' | 'error') => void
 }) {
   const bordeColor = estado.evaluado ? (estado.correcto ? '#22c55e' : '#ef4444') : '#0d9488'
   const faltan = estado.valores.some(v => v.trim() === '')
+  const botonRef = useRef<HTMLButtonElement>(null)
 
   function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter' && !faltan) onComprobar()
+    if (e.key === 'Enter' && !faltan && botonRef.current) onComprobar(botonRef.current)
   }
 
   return (
@@ -674,7 +678,7 @@ function TarjetaNumerar({ p, estado, onCambiar, onComprobar, onExplicarEstado }:
 
       {!estado.evaluado ? (
         <div style={{ display: 'flex', justifyContent: 'center' }}>
-          <button onClick={onComprobar} disabled={faltan} style={{
+          <button ref={botonRef} onClick={e => onComprobar(e.currentTarget)} disabled={faltan} style={{
             padding: '0.55rem 1.4rem', borderRadius: 12, border: 'none', cursor: faltan ? 'default' : 'pointer',
             background: faltan ? '#e2e8f0' : '#22c55e',
             boxShadow: faltan ? 'none' : '0 3px 0 #15803d',
@@ -701,13 +705,14 @@ function TarjetaNumero({ p, estado, onCambiar, onComprobar, onExplicarEstado }: 
   p: PreguntaNumero
   estado: EstadoSimple
   onCambiar: (valor: string) => void
-  onComprobar: () => void
+  onComprobar: (boton: HTMLButtonElement) => void
   onExplicarEstado: (estado: 'idle' | 'cargando' | 'error') => void
 }) {
   const bordeColor = estado.evaluado ? (estado.correcto ? '#22c55e' : '#ef4444') : '#0d9488'
+  const botonRef = useRef<HTMLButtonElement>(null)
 
   function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter') onComprobar()
+    if (e.key === 'Enter' && botonRef.current) onComprobar(botonRef.current)
   }
 
   return (
@@ -748,7 +753,7 @@ function TarjetaNumero({ p, estado, onCambiar, onComprobar, onExplicarEstado }: 
           }}
         />
         {!estado.evaluado && (
-          <button onClick={onComprobar} disabled={estado.valor.trim() === ''} style={{
+          <button ref={botonRef} onClick={e => onComprobar(e.currentTarget)} disabled={estado.valor.trim() === ''} style={{
             padding: '0.55rem 0.9rem', borderRadius: 12, border: 'none', cursor: 'pointer',
             background: estado.valor.trim() === '' ? '#e2e8f0' : '#22c55e',
             boxShadow: estado.valor.trim() === '' ? 'none' : '0 3px 0 #15803d',
@@ -778,11 +783,12 @@ function FilaCompleta({ p, estado, onCambiar, onComprobar, onExplicarEstado }: {
   p: PreguntaCompleta
   estado: EstadoSimple
   onCambiar: (valor: string) => void
-  onComprobar: () => void
+  onComprobar: (boton: HTMLButtonElement) => void
   onExplicarEstado: (estado: 'idle' | 'cargando' | 'error') => void
 }) {
+  const botonRef = useRef<HTMLButtonElement>(null)
   function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter') onComprobar()
+    if (e.key === 'Enter' && botonRef.current) onComprobar(botonRef.current)
   }
 
   const borde = estado.evaluado ? (estado.correcto ? '#22c55e' : '#ef4444') : '#5eead4'
@@ -810,7 +816,7 @@ function FilaCompleta({ p, estado, onCambiar, onComprobar, onExplicarEstado }: {
       />
       <span style={{ fontSize: '1.05rem', fontWeight: 600, color: '#134e4a' }}>{p.despues}</span>
       {!estado.evaluado ? (
-        <button onClick={onComprobar} disabled={estado.valor.trim() === ''} style={{
+        <button ref={botonRef} onClick={e => onComprobar(e.currentTarget)} disabled={estado.valor.trim() === ''} style={{
           marginLeft: 'auto', padding: '0.45rem 0.9rem', borderRadius: 10, border: 'none', cursor: 'pointer',
           background: estado.valor.trim() === '' ? '#e2e8f0' : '#22c55e',
           boxShadow: estado.valor.trim() === '' ? 'none' : '0 3px 0 #15803d',

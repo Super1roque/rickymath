@@ -8,6 +8,7 @@ import BotonExplicar from '@/components/guia/BotonExplicar'
 import BotonMenu from '@/components/guia/BotonMenu'
 import EstilosJuego from '@/components/guia/EstilosJuego'
 import Confetti from '@/components/guia/Confetti'
+import { useExplosion } from '@/components/guia/ExplosionContext'
 import BarraProgreso from '@/components/guia/BarraProgreso'
 import Ricky, { type RickyMood } from '@/components/guia/Ricky'
 import { useAuth } from '@/contexts/AuthContext'
@@ -215,31 +216,33 @@ export default function SegundoModulo06() {
   }, [terminado, user, perfilActivo, totalCorrectas, puntos, mejorRacha])
 
 
-  function comprobarSecuencia(p: PreguntaSecuencia) {
+  const disparar = useExplosion()
+
+  function comprobarSecuencia(p: PreguntaSecuencia, boton: HTMLButtonElement) {
     const actual = secuencias[p.numero]
     if (actual.evaluado || actual.valores.some(v => v.trim() === '')) return
     const ultimo = p.terminos[2]
     const correcto = actual.valores.every((v, i) => Number(v.trim()) === ultimo + p.paso * (i + 1))
-    if (correcto) reproducirCorrecto(); else reproducirIncorrecto()
+    if (correcto) { reproducirCorrecto(); disparar(actual.valores.join(', '), boton.getBoundingClientRect()) } else reproducirIncorrecto()
     registrarResultado(correcto)
     reaccionarRicky(correcto)
     setSecuencias(prev => ({ ...prev, [p.numero]: { ...prev[p.numero], evaluado: true, correcto } }))
   }
 
-  function comprobarFiguras() {
+  function comprobarFiguras(boton: HTMLButtonElement) {
     if (figuras.evaluado || figuras.valores[0] === null || figuras.valores[1] === null) return
     const correcto = figuras.valores[0] === PATRON_FIGURAS.siguientes[0] && figuras.valores[1] === PATRON_FIGURAS.siguientes[1]
-    if (correcto) reproducirCorrecto(); else reproducirIncorrecto()
+    if (correcto) { reproducirCorrecto(); disparar(`${figuras.valores[0]} ${figuras.valores[1]}`, boton.getBoundingClientRect()) } else reproducirIncorrecto()
     registrarResultado(correcto)
     reaccionarRicky(correcto)
     setFiguras(prev => ({ ...prev, evaluado: true, correcto }))
   }
 
-  function comprobarCompleta(p: PreguntaCompleta) {
+  function comprobarCompleta(p: PreguntaCompleta, boton: HTMLButtonElement) {
     const actual = completa[p.numero]
     if (actual.evaluado || actual.valor.trim() === '') return
     const correcto = p.aceptables.map(normalizarTexto).includes(normalizarTexto(actual.valor))
-    if (correcto) reproducirCorrecto(); else reproducirIncorrecto()
+    if (correcto) { reproducirCorrecto(); disparar(actual.valor.trim(), boton.getBoundingClientRect()) } else reproducirIncorrecto()
     registrarResultado(correcto)
     reaccionarRicky(correcto)
     setCompleta(prev => ({ ...prev, [p.numero]: { ...prev[p.numero], evaluado: true, correcto } }))
@@ -313,7 +316,7 @@ export default function SegundoModulo06() {
                 valores[indice] = valor
                 return { ...prev, [p.numero]: { ...prev[p.numero], valores } }
               })}
-              onComprobar={() => comprobarSecuencia(p)} onExplicarEstado={reaccionarRickyExplicar} />
+              onComprobar={boton => comprobarSecuencia(p, boton)} onExplicarEstado={reaccionarRickyExplicar} />
           ))}
 
           <TarjetaPatronFiguras estado={figuras} color={COLORES[4 % COLORES.length]}
@@ -322,7 +325,7 @@ export default function SegundoModulo06() {
               valores[indice] = valor
               return { ...prev, valores }
             })}
-            onComprobar={comprobarFiguras} onExplicarEstado={reaccionarRickyExplicar} />
+            onComprobar={boton => comprobarFiguras(boton)} onExplicarEstado={reaccionarRickyExplicar} />
         </div>
 
         <div style={{
@@ -336,7 +339,7 @@ export default function SegundoModulo06() {
             {COMPLETAR.map(p => (
               <FilaCompleta key={p.numero} p={p} estado={completa[p.numero]}
                 onCambiar={valor => setCompleta(prev => ({ ...prev, [p.numero]: { ...prev[p.numero], valor } }))}
-                onComprobar={() => comprobarCompleta(p)} onExplicarEstado={reaccionarRickyExplicar} />
+                onComprobar={boton => comprobarCompleta(p, boton)} onExplicarEstado={reaccionarRickyExplicar} />
             ))}
           </div>
         </div>
@@ -452,14 +455,15 @@ function TarjetaSecuencia({ p, estado, color, onCambiar, onComprobar, onExplicar
   estado: EstadoSecuencia
   color: string
   onCambiar: (indice: number, valor: string) => void
-  onComprobar: () => void
+  onComprobar: (boton: HTMLButtonElement) => void
   onExplicarEstado: (estado: 'idle' | 'cargando' | 'error') => void
 }) {
   const bordeColor = estado.evaluado ? (estado.correcto ? '#22c55e' : '#ef4444') : color
   const listo = estado.valores.every(v => v.trim() !== '')
+  const botonRef = useRef<HTMLButtonElement>(null)
 
   function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter' && listo) onComprobar()
+    if (e.key === 'Enter' && listo && botonRef.current) onComprobar(botonRef.current)
   }
 
   return (
@@ -497,7 +501,7 @@ function TarjetaSecuencia({ p, estado, color, onCambiar, onComprobar, onExplicar
       </div>
 
       {!estado.evaluado && (
-        <button onClick={onComprobar} disabled={!listo} style={{
+        <button ref={botonRef} onClick={e => onComprobar(e.currentTarget)} disabled={!listo} style={{
           width: '100%', marginTop: '0.7rem', padding: '0.5rem', borderRadius: 12, border: 'none', cursor: 'pointer',
           background: !listo ? '#e2e8f0' : '#22c55e',
           boxShadow: !listo ? 'none' : '0 3px 0 #15803d',
@@ -526,7 +530,7 @@ function TarjetaPatronFiguras({ estado, color, onElegir, onComprobar, onExplicar
   estado: EstadoFiguras
   color: string
   onElegir: (indice: number, valor: string) => void
-  onComprobar: () => void
+  onComprobar: (boton: HTMLButtonElement) => void
   onExplicarEstado: (estado: 'idle' | 'cargando' | 'error') => void
 }) {
   const bordeColor = estado.evaluado ? (estado.correcto ? '#22c55e' : '#ef4444') : color
@@ -594,7 +598,7 @@ function TarjetaPatronFiguras({ estado, color, onElegir, onComprobar, onExplicar
       </div>
 
       {!estado.evaluado && (
-        <button onClick={onComprobar} disabled={!listo} style={{
+        <button onClick={e => onComprobar(e.currentTarget)} disabled={!listo} style={{
           width: '100%', marginTop: '0.8rem', padding: '0.5rem', borderRadius: 12, border: 'none', cursor: 'pointer',
           background: !listo ? '#e2e8f0' : '#22c55e',
           boxShadow: !listo ? 'none' : '0 3px 0 #15803d',
@@ -623,11 +627,12 @@ function FilaCompleta({ p, estado, onCambiar, onComprobar, onExplicarEstado }: {
   p: PreguntaCompleta
   estado: EstadoPregunta
   onCambiar: (valor: string) => void
-  onComprobar: () => void
+  onComprobar: (boton: HTMLButtonElement) => void
   onExplicarEstado: (estado: 'idle' | 'cargando' | 'error') => void
 }) {
+  const botonRef = useRef<HTMLButtonElement>(null)
   function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter') onComprobar()
+    if (e.key === 'Enter' && botonRef.current) onComprobar(botonRef.current)
   }
 
   const borde = estado.evaluado ? (estado.correcto ? '#22c55e' : '#ef4444') : '#7dd3fc'
@@ -655,7 +660,7 @@ function FilaCompleta({ p, estado, onCambiar, onComprobar, onExplicarEstado }: {
       />
       <span style={{ fontSize: '1.05rem', fontWeight: 600, color: '#0c4a6e' }}>{p.despues}</span>
       {!estado.evaluado ? (
-        <button onClick={onComprobar} disabled={estado.valor.trim() === ''} style={{
+        <button ref={botonRef} onClick={e => onComprobar(e.currentTarget)} disabled={estado.valor.trim() === ''} style={{
           marginLeft: 'auto', padding: '0.45rem 0.9rem', borderRadius: 10, border: 'none', cursor: 'pointer',
           background: estado.valor.trim() === '' ? '#e2e8f0' : '#22c55e',
           boxShadow: estado.valor.trim() === '' ? 'none' : '0 3px 0 #15803d',

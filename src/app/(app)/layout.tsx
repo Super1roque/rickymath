@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { usePerfil } from '@/contexts/PerfilContext'
+import { ExplosionProvider } from '@/components/guia/ExplosionContext'
 
 export default function AppGroupLayout({ children }: { children: React.ReactNode }) {
   const { user, tenantData, loading, logout } = useAuth()
@@ -68,7 +69,7 @@ export default function AppGroupLayout({ children }: { children: React.ReactNode
   if (!perfilActivo) return null
 
   return (
-    <>
+    <ExplosionProvider>
       {children}
       <div style={{
         position: 'fixed', top: 12, right: 12, zIndex: 50,
@@ -129,6 +130,6 @@ export default function AppGroupLayout({ children }: { children: React.ReactNode
           {tenantData?.plan === 'premium' ? '⭐ Premium' : 'Free'}
         </span>
       </div>
-    </>
+    </ExplosionProvider>
   )
 }

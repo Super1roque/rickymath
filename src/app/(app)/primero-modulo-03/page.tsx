@@ -8,6 +8,7 @@ import BotonExplicar from '@/components/guia/BotonExplicar'
 import BotonMenu from '@/components/guia/BotonMenu'
 import EstilosJuego from '@/components/guia/EstilosJuego'
 import Confetti from '@/components/guia/Confetti'
+import { useExplosion } from '@/components/guia/ExplosionContext'
 import BarraProgreso from '@/components/guia/BarraProgreso'
 import Ricky, { type RickyMood } from '@/components/guia/Ricky'
 import { useAuth } from '@/contexts/AuthContext'
@@ -170,11 +171,13 @@ export default function PrimeroModulo03() {
   }, [terminado, user, perfilActivo, totalCorrectas, puntos, mejorRacha])
 
 
-  function elegirSigno(p: PreguntaComparar, opcion: Signo) {
+  const disparar = useExplosion()
+
+  function elegirSigno(p: PreguntaComparar, opcion: Signo, boton: HTMLButtonElement) {
     const actual = comparar[p.numero]
     if (actual.evaluado) return
     const correcto = opcion === p.correcta
-    if (correcto) reproducirCorrecto(); else reproducirIncorrecto()
+    if (correcto) { reproducirCorrecto(); disparar(opcion, boton.getBoundingClientRect()) } else reproducirIncorrecto()
     registrarResultado(correcto)
     reaccionarRicky(correcto)
     setComparar(prev => ({ ...prev, [p.numero]: { seleccion: opcion, evaluado: true, correcto } }))
@@ -241,7 +244,7 @@ export default function PrimeroModulo03() {
         }}>
           {ITEMS.map((p, i) => (
             <TarjetaComparar key={p.numero} p={p} estado={comparar[p.numero]} color={COLORES[i % COLORES.length]}
-              onElegir={opcion => elegirSigno(p, opcion)} onExplicarEstado={reaccionarRickyExplicar} />
+              onElegir={(opcion, boton) => elegirSigno(p, opcion, boton)} onExplicarEstado={reaccionarRickyExplicar} />
           ))}
         </div>
 
@@ -292,7 +295,7 @@ function TarjetaComparar({ p, estado, color, onElegir, onExplicarEstado }: {
   p: PreguntaComparar
   estado: EstadoComparar
   color: string
-  onElegir: (opcion: Signo) => void
+  onElegir: (opcion: Signo, boton: HTMLButtonElement) => void
   onExplicarEstado: (estado: 'idle' | 'cargando' | 'error') => void
 }) {
   const bordeColor = estado.evaluado ? (estado.correcto ? '#22c55e' : '#ef4444') : color
@@ -347,7 +350,7 @@ function TarjetaComparar({ p, estado, color, onElegir, onExplicarEstado }: {
             else if (esLaCorrecta) { bg = '#dcfce7'; borde = '#86efac'; textColor = '#16a34a' }
           }
           return (
-            <button key={o.valor} onClick={() => onElegir(o.valor)} disabled={estado.evaluado} style={{
+            <button key={o.valor} onClick={e => onElegir(o.valor, e.currentTarget)} disabled={estado.evaluado} style={{
               flex: 1, minWidth: 0, padding: '0.6rem 0.2rem', borderRadius: 10, border: `2px solid ${borde}`,
               background: bg, color: textColor, fontWeight: 800, fontSize: '1.3rem',
               cursor: estado.evaluado ? 'default' : 'pointer',

@@ -8,6 +8,7 @@ import BotonExplicar from '@/components/guia/BotonExplicar'
 import BotonMenu from '@/components/guia/BotonMenu'
 import EstilosJuego from '@/components/guia/EstilosJuego'
 import Confetti from '@/components/guia/Confetti'
+import { useExplosion } from '@/components/guia/ExplosionContext'
 import BarraProgreso from '@/components/guia/BarraProgreso'
 import Ricky, { type RickyMood } from '@/components/guia/Ricky'
 import { useAuth } from '@/contexts/AuthContext'
@@ -168,23 +169,25 @@ export default function CuartoModulo01() {
   }, [terminado, user, perfilActivo, totalCorrectas, puntos, mejorRacha])
 
 
-  function comprobarItem(p: ItemNumero) {
+  const disparar = useExplosion()
+
+  function comprobarItem(p: ItemNumero, boton: HTMLButtonElement) {
     const actual = items[p.numero]
     if (actual.evaluado || actual.digitos.some(v => v.trim() === '') || actual.escrito.trim() === '') return
     const digitosOk = actual.digitos.every((v, i) => Number(v.trim()) === p.digitos[i])
     const escritoOk = normalizarTexto(actual.escrito) === normalizarTexto(p.escrito)
     const correcto = digitosOk && escritoOk
-    if (correcto) reproducirCorrecto(); else reproducirIncorrecto()
+    if (correcto) { reproducirCorrecto(); disparar(p.valor, boton.getBoundingClientRect()) } else reproducirIncorrecto()
     registrarResultado(correcto)
     reaccionarRicky(correcto)
     setItems(prev => ({ ...prev, [p.numero]: { ...prev[p.numero], evaluado: true, correcto } }))
   }
 
-  function comprobarCompleta(p: PreguntaCompleta) {
+  function comprobarCompleta(p: PreguntaCompleta, boton: HTMLButtonElement) {
     const actual = completa[p.numero]
     if (actual.evaluado || actual.valor.trim() === '') return
     const correcto = p.aceptables.map(normalizarTexto).includes(normalizarTexto(actual.valor))
-    if (correcto) reproducirCorrecto(); else reproducirIncorrecto()
+    if (correcto) { reproducirCorrecto(); disparar(actual.valor.trim(), boton.getBoundingClientRect()) } else reproducirIncorrecto()
     registrarResultado(correcto)
     reaccionarRicky(correcto)
     setCompleta(prev => ({ ...prev, [p.numero]: { ...prev[p.numero], evaluado: true, correcto } }))
@@ -268,7 +271,7 @@ export default function CuartoModulo01() {
                 return { ...prev, [p.numero]: { ...prev[p.numero], digitos } }
               })}
               onCambiarEscrito={valor => setItems(prev => ({ ...prev, [p.numero]: { ...prev[p.numero], escrito: valor } }))}
-              onComprobar={() => comprobarItem(p)} onExplicarEstado={reaccionarRickyExplicar} />
+              onComprobar={boton => comprobarItem(p, boton)} onExplicarEstado={reaccionarRickyExplicar} />
           ))}
         </div>
 
@@ -283,7 +286,7 @@ export default function CuartoModulo01() {
             {COMPLETAR.map(p => (
               <FilaCompleta key={p.numero} p={p} estado={completa[p.numero]}
                 onCambiar={valor => setCompleta(prev => ({ ...prev, [p.numero]: { ...prev[p.numero], valor } }))}
-                onComprobar={() => comprobarCompleta(p)} onExplicarEstado={reaccionarRickyExplicar} />
+                onComprobar={boton => comprobarCompleta(p, boton)} onExplicarEstado={reaccionarRickyExplicar} />
             ))}
           </div>
         </div>
@@ -412,15 +415,16 @@ function TarjetaNumero({ p, estado, color, onCambiarDigito, onCambiarEscrito, on
   color: string
   onCambiarDigito: (indice: number, valor: string) => void
   onCambiarEscrito: (valor: string) => void
-  onComprobar: () => void
+  onComprobar: (boton: HTMLButtonElement) => void
   onExplicarEstado: (estado: 'idle' | 'cargando' | 'error') => void
 }) {
   const bordeColor = estado.evaluado ? (estado.correcto ? '#22c55e' : '#ef4444') : color
   const faltanDigitos = estado.digitos.some(v => v.trim() === '')
   const faltaEscrito = estado.escrito.trim() === ''
+  const botonRef = useRef<HTMLButtonElement>(null)
 
   function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter' && !faltanDigitos && !faltaEscrito) onComprobar()
+    if (e.key === 'Enter' && !faltanDigitos && !faltaEscrito && botonRef.current) onComprobar(botonRef.current)
   }
 
   return (
@@ -481,7 +485,7 @@ function TarjetaNumero({ p, estado, color, onCambiarDigito, onCambiarEscrito, on
 
       {!estado.evaluado && (
         <div style={{ display: 'flex', justifyContent: 'center', marginTop: '0.7rem' }}>
-          <button onClick={onComprobar} disabled={faltanDigitos || faltaEscrito} style={{
+          <button ref={botonRef} onClick={e => onComprobar(e.currentTarget)} disabled={faltanDigitos || faltaEscrito} style={{
             padding: '0.55rem 1.4rem', borderRadius: 12, border: 'none', cursor: (faltanDigitos || faltaEscrito) ? 'default' : 'pointer',
             background: (faltanDigitos || faltaEscrito) ? '#e2e8f0' : '#22c55e',
             boxShadow: (faltanDigitos || faltaEscrito) ? 'none' : '0 3px 0 #15803d',
@@ -510,11 +514,12 @@ function FilaCompleta({ p, estado, onCambiar, onComprobar, onExplicarEstado }: {
   p: PreguntaCompleta
   estado: EstadoCompleta
   onCambiar: (valor: string) => void
-  onComprobar: () => void
+  onComprobar: (boton: HTMLButtonElement) => void
   onExplicarEstado: (estado: 'idle' | 'cargando' | 'error') => void
 }) {
+  const botonRef = useRef<HTMLButtonElement>(null)
   function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter') onComprobar()
+    if (e.key === 'Enter' && botonRef.current) onComprobar(botonRef.current)
   }
 
   const borde = estado.evaluado ? (estado.correcto ? '#22c55e' : '#ef4444') : '#fcd34d'
@@ -542,7 +547,7 @@ function FilaCompleta({ p, estado, onCambiar, onComprobar, onExplicarEstado }: {
       />
       <span style={{ fontSize: '1.05rem', fontWeight: 600, color: '#78350f' }}>{p.despues}</span>
       {!estado.evaluado ? (
-        <button onClick={onComprobar} disabled={estado.valor.trim() === ''} style={{
+        <button ref={botonRef} onClick={e => onComprobar(e.currentTarget)} disabled={estado.valor.trim() === ''} style={{
           marginLeft: 'auto', padding: '0.45rem 0.9rem', borderRadius: 10, border: 'none', cursor: 'pointer',
           background: estado.valor.trim() === '' ? '#e2e8f0' : '#22c55e',
           boxShadow: estado.valor.trim() === '' ? 'none' : '0 3px 0 #15803d',

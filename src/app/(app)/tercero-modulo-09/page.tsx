@@ -8,6 +8,7 @@ import BotonExplicar from '@/components/guia/BotonExplicar'
 import BotonMenu from '@/components/guia/BotonMenu'
 import EstilosJuego from '@/components/guia/EstilosJuego'
 import Confetti from '@/components/guia/Confetti'
+import { useExplosion } from '@/components/guia/ExplosionContext'
 import BarraProgreso from '@/components/guia/BarraProgreso'
 import Ricky, { type RickyMood } from '@/components/guia/Ricky'
 import { useAuth } from '@/contexts/AuthContext'
@@ -260,31 +261,33 @@ export default function TerceroModulo09() {
   // cuando el usuario hace clic — dentro de un updater de setState el efecto
   // de sonido podría dispararse más de una vez (p. ej. en modo estricto de
   // desarrollo, que invoca los updaters dos veces).
-  function comprobarSub(g: Grafico, p: SubPregunta) {
+  const disparar = useExplosion()
+
+  function comprobarSub(g: Grafico, p: SubPregunta, boton: HTMLButtonElement) {
     const id = idSub(g.numero, p.letra)
     const actual = subs[id]
     if (actual.evaluado || actual.valor.trim() === '') return
     const correcto = p.aceptables.map(normalizarTexto).includes(normalizarTexto(actual.valor))
-    if (correcto) reproducirCorrecto(); else reproducirIncorrecto()
+    if (correcto) { reproducirCorrecto(); disparar(actual.valor.trim(), boton.getBoundingClientRect()) } else reproducirIncorrecto()
     registrarResultado(correcto)
     reaccionarRicky(correcto)
     setSubs(prev => ({ ...prev, [id]: { ...prev[id], evaluado: true, correcto } }))
   }
 
-  function comprobarCompleta(p: PreguntaCompleta) {
+  function comprobarCompleta(p: PreguntaCompleta, boton: HTMLButtonElement) {
     const actual = completa[p.numero]
     if (actual.evaluado || actual.valor.trim() === '') return
     const correcto = p.aceptables.map(normalizarTexto).includes(normalizarTexto(actual.valor))
-    if (correcto) reproducirCorrecto(); else reproducirIncorrecto()
+    if (correcto) { reproducirCorrecto(); disparar(actual.valor.trim(), boton.getBoundingClientRect()) } else reproducirIncorrecto()
     registrarResultado(correcto)
     reaccionarRicky(correcto)
     setCompleta(prev => ({ ...prev, [p.numero]: { ...prev[p.numero], evaluado: true, correcto } }))
   }
 
-  function comprobarDibujo() {
+  function comprobarDibujo(boton: HTMLButtonElement) {
     if (dibujoEvaluado) return
     const correcto = OBJETIVOS.every(o => valoresDibujo[o.nombre] === o.objetivo)
-    if (correcto) reproducirCorrecto(); else reproducirIncorrecto()
+    if (correcto) { reproducirCorrecto(); disparar('✅', boton.getBoundingClientRect()) } else reproducirIncorrecto()
     registrarResultado(correcto)
     reaccionarRicky(correcto)
     setDibujoEvaluado(true)
@@ -357,7 +360,7 @@ export default function TerceroModulo09() {
           {GRAFICOS.map((g, i) => (
             <TarjetaGrafico key={g.numero} g={g} color={COLORES[i % COLORES.length]}
               subs={subs} onCambiar={(id, valor) => setSubs(prev => ({ ...prev, [id]: { ...prev[id], valor } }))}
-              onComprobar={p => comprobarSub(g, p)} onExplicarEstado={reaccionarRickyExplicar} />
+              onComprobar={(p, boton) => comprobarSub(g, p, boton)} onExplicarEstado={reaccionarRickyExplicar} />
           ))}
 
           <TarjetaDibujar
@@ -381,7 +384,7 @@ export default function TerceroModulo09() {
             {COMPLETAR.map(p => (
               <FilaCompleta key={p.numero} p={p} estado={completa[p.numero]}
                 onCambiar={valor => setCompleta(prev => ({ ...prev, [p.numero]: { ...prev[p.numero], valor } }))}
-                onComprobar={() => comprobarCompleta(p)} onExplicarEstado={reaccionarRickyExplicar} />
+                onComprobar={boton => comprobarCompleta(p, boton)} onExplicarEstado={reaccionarRickyExplicar} />
             ))}
           </div>
         </div>
@@ -514,7 +517,7 @@ function TarjetaGrafico({ g, color, subs, onCambiar, onComprobar, onExplicarEsta
   color: string
   subs: Record<string, EstadoPregunta>
   onCambiar: (id: string, valor: string) => void
-  onComprobar: (p: SubPregunta) => void
+  onComprobar: (p: SubPregunta, boton: HTMLButtonElement) => void
   onExplicarEstado: (estado: 'idle' | 'cargando' | 'error') => void
 }) {
   const lecturaCompleta = `${g.titulo}: ` + g.categorias.map(c => `${c.nombre}, ${c.valor}`).join('. ')
@@ -543,7 +546,7 @@ function TarjetaGrafico({ g, color, subs, onCambiar, onComprobar, onExplicarEsta
           <FilaSubPregunta key={p.letra} g={g} p={p} color={color}
             estado={subs[idSub(g.numero, p.letra)]}
             onCambiar={valor => onCambiar(idSub(g.numero, p.letra), valor)}
-            onComprobar={() => onComprobar(p)} onExplicarEstado={onExplicarEstado} />
+            onComprobar={boton => onComprobar(p, boton)} onExplicarEstado={onExplicarEstado} />
         ))}
       </div>
     </div>
@@ -556,11 +559,12 @@ function FilaSubPregunta({ p, color, estado, onCambiar, onComprobar, onExplicarE
   color: string
   estado: EstadoPregunta
   onCambiar: (valor: string) => void
-  onComprobar: () => void
+  onComprobar: (boton: HTMLButtonElement) => void
   onExplicarEstado: (estado: 'idle' | 'cargando' | 'error') => void
 }) {
+  const botonRef = useRef<HTMLButtonElement>(null)
   function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter') onComprobar()
+    if (e.key === 'Enter' && botonRef.current) onComprobar(botonRef.current)
   }
 
   const borde = estado.evaluado ? (estado.correcto ? '#22c55e' : '#ef4444') : `${color}33`
@@ -588,7 +592,7 @@ function FilaSubPregunta({ p, color, estado, onCambiar, onComprobar, onExplicarE
         }}
       />
       {!estado.evaluado ? (
-        <button onClick={onComprobar} disabled={estado.valor.trim() === ''} style={{
+        <button ref={botonRef} onClick={e => onComprobar(e.currentTarget)} disabled={estado.valor.trim() === ''} style={{
           padding: '0.35rem 0.6rem', borderRadius: 8, border: 'none', cursor: 'pointer', flexShrink: 0,
           background: estado.valor.trim() === '' ? '#e2e8f0' : '#22c55e',
           boxShadow: estado.valor.trim() === '' ? 'none' : '0 2px 0 #15803d',
@@ -619,7 +623,7 @@ function TarjetaDibujar({ color, valores, evaluado, correcto, onCambiar, onCompr
   evaluado: boolean
   correcto: boolean
   onCambiar: (nombre: string, valor: number) => void
-  onComprobar: () => void
+  onComprobar: (boton: HTMLButtonElement) => void
 }) {
   const ALTURA_MAX = 100
   const todosListos = OBJETIVOS.every(o => valores[o.nombre] > 0)
@@ -687,7 +691,7 @@ function TarjetaDibujar({ color, valores, evaluado, correcto, onCambiar, onCompr
       </div>
 
       {!evaluado ? (
-        <button onClick={onComprobar} disabled={!todosListos} style={{
+        <button onClick={e => onComprobar(e.currentTarget)} disabled={!todosListos} style={{
           width: '100%', marginTop: '0.85rem', padding: '0.6rem', borderRadius: 12, border: 'none', cursor: 'pointer',
           background: !todosListos ? '#e2e8f0' : '#22c55e',
           boxShadow: !todosListos ? 'none' : '0 3px 0 #15803d',
@@ -709,11 +713,12 @@ function FilaCompleta({ p, estado, onCambiar, onComprobar, onExplicarEstado }: {
   p: PreguntaCompleta
   estado: EstadoPregunta
   onCambiar: (valor: string) => void
-  onComprobar: () => void
+  onComprobar: (boton: HTMLButtonElement) => void
   onExplicarEstado: (estado: 'idle' | 'cargando' | 'error') => void
 }) {
+  const botonRef = useRef<HTMLButtonElement>(null)
   function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter') onComprobar()
+    if (e.key === 'Enter' && botonRef.current) onComprobar(botonRef.current)
   }
 
   const borde = estado.evaluado ? (estado.correcto ? '#22c55e' : '#ef4444') : '#fca5a5'
@@ -741,7 +746,7 @@ function FilaCompleta({ p, estado, onCambiar, onComprobar, onExplicarEstado }: {
       />
       <span style={{ fontSize: '1.05rem', fontWeight: 600, color: '#7f1d1d' }}>{p.despues}</span>
       {!estado.evaluado ? (
-        <button onClick={onComprobar} disabled={estado.valor.trim() === ''} style={{
+        <button ref={botonRef} onClick={e => onComprobar(e.currentTarget)} disabled={estado.valor.trim() === ''} style={{
           marginLeft: 'auto', padding: '0.45rem 0.9rem', borderRadius: 10, border: 'none', cursor: 'pointer',
           background: estado.valor.trim() === '' ? '#e2e8f0' : '#22c55e',
           boxShadow: estado.valor.trim() === '' ? 'none' : '0 3px 0 #15803d',

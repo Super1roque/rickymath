@@ -2,12 +2,14 @@
 
 import { useState } from 'react'
 import { leerTexto } from '@/lib/guiaAudio'
+import { useExplosion } from './ExplosionContext'
 
 // Botón "💡 Explicar" — aparece recién después de responder una pregunta
 // (correcta o no) y lee en voz alta una explicación corta del método para
 // resolverla, reusando el mismo pipeline de audio que BotonEscuchar
 // (Deepgram, con estado de carga). Es la versión "pedile una explicación"
-// en vez de "leeme la pregunta".
+// en vez de "leeme la pregunta". También festeja con la explosión al
+// tocarlo, clonando el 💡 (la explicación en sí es muy larga para clonar).
 export default function BotonExplicar({ texto, onEstadoCambia }: {
   texto: string
   // Opcional: para módulos que quieran reflejar la carga/error en algo más
@@ -15,19 +17,21 @@ export default function BotonExplicar({ texto, onEstadoCambia }: {
   onEstadoCambia?: (estado: 'idle' | 'cargando' | 'error') => void
 }) {
   const [estado, setEstadoInterno] = useState<'idle' | 'cargando' | 'error'>('idle')
+  const disparar = useExplosion()
   function setEstado(nuevo: 'idle' | 'cargando' | 'error') {
     setEstadoInterno(nuevo)
     onEstadoCambia?.(nuevo)
   }
 
-  async function handleClick() {
+  async function handleClick(e: React.MouseEvent<HTMLButtonElement>) {
     if (estado === 'cargando') return
+    disparar('💡', e.currentTarget.getBoundingClientRect())
     setEstado('cargando')
     try {
       await leerTexto(texto)
       setEstado('idle')
-    } catch (e) {
-      console.error('No se pudo leer la explicación:', e)
+    } catch (err) {
+      console.error('No se pudo leer la explicación:', err)
       setEstado('error')
       setTimeout(() => setEstado('idle'), 1500)
     }
