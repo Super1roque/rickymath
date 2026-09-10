@@ -8,14 +8,23 @@ import './globals.css'
 const DESCRIPCION = 'Matemáticas en el Mundo de los Bloques — guías interactivas de primero a quinto grado, tablas de multiplicar y problemas, temática Minecraft con Ricky.'
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://rickymath.com'),
   title: 'RickyMath',
   description: DESCRIPCION,
   openGraph: {
     title: 'RickyMath',
     description: DESCRIPCION,
+    url: 'https://rickymath.com',
     siteName: 'RickyMath',
+    images: [{ url: '/og-image.png', width: 1200, height: 630 }],
     locale: 'es_HN',
     type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'RickyMath',
+    description: DESCRIPCION,
+    images: ['/og-image.png'],
   },
   appleWebApp: {
     capable: true,
