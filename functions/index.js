@@ -172,7 +172,11 @@ exports.recordatorioDesbloqueo = onSchedule(
   async () => {
     const ahora = Date.now()
     const DIA_MS = 24 * 60 * 60 * 1000
-    const desde = new Date(ahora - 4 * DIA_MS)
+    // "3+ días" en vez de una ventana estricta de 24h — así agarra tanto a
+    // cuentas nuevas que van cumpliendo 3 días, como a cuentas que ya
+    // existían de antes (5, 10, 30+ días) y todavía no recibieron el
+    // recordatorio. El flag `recordatorioEnviado` es lo único que evita
+    // reenviarlo, no la ventana de tiempo.
     const hasta = new Date(ahora - 3 * DIA_MS)
 
     const snap = await admin.firestore()
@@ -185,11 +189,11 @@ exports.recordatorioDesbloqueo = onSchedule(
       const u = doc.data()
       if (u.recordatorioEnviado) return false
       const creadoEn = u.creadoEn?.toDate ? u.creadoEn.toDate() : null
-      return creadoEn && creadoEn >= desde && creadoEn < hasta
+      return creadoEn && creadoEn < hasta
     })
 
     if (candidatos.length === 0) {
-      console.log('recordatorioDesbloqueo: nadie en la ventana de 3-4 días hoy')
+      console.log('recordatorioDesbloqueo: nadie pendiente de recordatorio hoy')
       return
     }
 
