@@ -4,8 +4,9 @@ import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 
 // Segundo del video en el que aparece el CTA — a partir de acá se puede
-// ajustar sin tocar el resto de la lógica.
-const CTA_DESDE_SEGUNDO = 5
+// ajustar sin tocar el resto de la lógica. Elegido para que coincida con
+// el arranque del momento de celebración (trofeo/chispas), no antes.
+const CTA_DESDE_SEGUNDO = 8
 
 export default function VideoConCta() {
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -21,7 +22,7 @@ export default function VideoConCta() {
 
   return (
     <div style={{
-      position: 'relative', width: '100%', maxWidth: 720, margin: '0 auto',
+      position: 'relative', width: '100%', maxWidth: 420, margin: '0 auto',
       borderRadius: 16, overflow: 'hidden', boxShadow: '0 12px 0 rgba(0,0,0,0.25), 0 20px 40px rgba(0,0,0,0.4)',
       background: '#000',
     }}>
@@ -29,10 +30,10 @@ export default function VideoConCta() {
         ref={videoRef}
         controls
         playsInline
-        poster="/video-poster.png"
+        poster="/video-poster.jpg"
         style={{ display: 'block', width: '100%', height: 'auto' }}
       >
-        <source src="/videos/prueba.mp4" type="video/mp4" />
+        <source src="/videos/anuncio.mp4" type="video/mp4" />
       </video>
 
       <Link

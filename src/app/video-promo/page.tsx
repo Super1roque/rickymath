@@ -13,15 +13,15 @@ export const metadata: Metadata = {
     url: 'https://rickymath.com/video-promo',
     siteName: 'RickyMath',
     type: 'video.other',
-    videos: [{ url: 'https://rickymath.com/videos/prueba.mp4', width: 1280, height: 720, type: 'video/mp4' }],
-    images: [{ url: '/video-poster.png', width: 1280, height: 720 }],
+    videos: [{ url: 'https://rickymath.com/videos/anuncio.mp4', width: 1080, height: 1620, type: 'video/mp4' }],
+    images: [{ url: '/video-poster.jpg', width: 1080, height: 1620 }],
     locale: 'es_HN',
   },
   twitter: {
     card: 'player',
     title: 'RickyMath — Video',
     description: DESCRIPCION,
-    images: ['/video-poster.png'],
+    images: ['/video-poster.jpg'],
   },
 }
 
