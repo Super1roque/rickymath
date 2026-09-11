@@ -1,5 +1,6 @@
 const { onRequest, onCall, HttpsError } = require('firebase-functions/v2/https')
 const { onDocumentCreated } = require('firebase-functions/v2/firestore')
+const { onSchedule } = require('firebase-functions/v2/scheduler')
 const { defineSecret } = require('firebase-functions/params')
 const admin = require('firebase-admin')
 const { Resend } = require('resend')
@@ -156,6 +157,70 @@ exports.avisarNuevoUsuario = onDocumentCreated(
       console.error('Resend devolvió un error al mandar la bienvenida al usuario:', bienvenida.error)
     } else {
       console.log('Correo de bienvenida enviado, id:', bienvenida.data?.id)
+    }
+  },
+)
+
+// Corre una vez al día: le manda un recordatorio a quien lleva 3-4 días
+// registrado y sigue en plan gratis, ofreciéndole desbloquear todo por
+// L.350. La ventana de un día (en vez de "3 días o más") evita mandarlo
+// más de una vez por esta vía sola, pero igual se marca `recordatorioEnviado`
+// como red de seguridad extra (ej. si la función falla un día y hay que
+// reintentar, no vuelve a mandarlo a quien ya lo recibió).
+exports.recordatorioDesbloqueo = onSchedule(
+  { schedule: 'every day 09:00', timeZone: 'America/Tegucigalpa', region: 'us-central1', secrets: [RESEND_API_KEY] },
+  async () => {
+    const ahora = Date.now()
+    const DIA_MS = 24 * 60 * 60 * 1000
+    const desde = new Date(ahora - 4 * DIA_MS)
+    const hasta = new Date(ahora - 3 * DIA_MS)
+
+    const snap = await admin.firestore()
+      .collection('usuarios')
+      .where('plan', '==', 'free')
+      .where('status', '==', 'active')
+      .get()
+
+    const candidatos = snap.docs.filter(doc => {
+      const u = doc.data()
+      if (u.recordatorioEnviado) return false
+      const creadoEn = u.creadoEn?.toDate ? u.creadoEn.toDate() : null
+      return creadoEn && creadoEn >= desde && creadoEn < hasta
+    })
+
+    if (candidatos.length === 0) {
+      console.log('recordatorioDesbloqueo: nadie en la ventana de 3-4 días hoy')
+      return
+    }
+
+    const resend = new Resend(RESEND_API_KEY.value())
+
+    for (const doc of candidatos) {
+      const u = doc.data()
+      if (!u.email) continue
+
+      const { data, error } = await resend.emails.send({
+        from: 'RickyMath <hola@rickymath.com>',
+        to: u.email,
+        subject: `${u.nombre ? `${u.nombre}, ¿` : '¿'}Cómo le fue a tu hijo con RickyMath?`,
+        html: `
+          <p>Hola${u.nombre ? ` ${u.nombre}` : ''},</p>
+          <p>Ya llevás unos días practicando en <strong>RickyMath</strong> con Primero grado y las Tablas de Multiplicar, gratis.</p>
+          <p>Si a tu hijo le está gustando, podés desbloquear <strong>Segundo a Quinto grado y Problemas</strong> con un solo pago de <strong>L. 350</strong> — sin suscripciones, para siempre.</p>
+          <p>
+            <a href="https://rickymath.com/desbloquear" style="display:inline-block;background:#22c55e;color:#ffffff;text-decoration:none;font-weight:600;padding:12px 20px;border-radius:8px;">
+              Desbloquear todo →
+            </a>
+          </p>
+          <p style="color:#6b7080;font-size:13px;">Si preferís seguir solo con lo gratis, ningún problema — este es el único recordatorio que te vamos a mandar.</p>
+        `,
+      })
+      if (error) {
+        console.error(`Resend devolvió un error al mandar el recordatorio a ${u.email}:`, error)
+        continue
+      }
+      console.log(`Recordatorio enviado a ${u.email}, id:`, data?.id)
+      await doc.ref.update({ recordatorioEnviado: true, recordatorioEnviadoEn: admin.firestore.FieldValue.serverTimestamp() })
     }
   },
 )
