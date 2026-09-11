@@ -11,14 +11,26 @@ const CTA_DESDE_SEGUNDO = 8
 export default function VideoConCta() {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [mostrarCta, setMostrarCta] = useState(false)
+  const [silenciado, setSilenciado] = useState(true)
 
   useEffect(() => {
     const video = videoRef.current
     if (!video) return
     const onTimeUpdate = () => setMostrarCta(video.currentTime >= CTA_DESDE_SEGUNDO)
+    const onVolumeChange = () => setSilenciado(video.muted)
     video.addEventListener('timeupdate', onTimeUpdate)
-    return () => video.removeEventListener('timeupdate', onTimeUpdate)
+    video.addEventListener('volumechange', onVolumeChange)
+    return () => {
+      video.removeEventListener('timeupdate', onTimeUpdate)
+      video.removeEventListener('volumechange', onVolumeChange)
+    }
   }, [])
+
+  function activarSonido() {
+    const video = videoRef.current
+    if (!video) return
+    video.muted = false
+  }
 
   return (
     <div style={{
@@ -30,11 +42,28 @@ export default function VideoConCta() {
         ref={videoRef}
         controls
         playsInline
+        autoPlay
+        muted
         poster="/video-poster.jpg"
         style={{ display: 'block', width: '100%', height: 'auto' }}
       >
         <source src="/videos/anuncio.mp4" type="video/mp4" />
       </video>
+
+      {silenciado && (
+        <button
+          onClick={activarSonido}
+          style={{
+            position: 'absolute', top: '0.85rem', right: '0.85rem',
+            display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
+            padding: '0.45rem 0.8rem', borderRadius: 999, fontWeight: 700, fontSize: '0.8rem',
+            background: 'rgba(15, 23, 42, 0.65)', color: 'white', border: '1px solid rgba(255,255,255,0.35)',
+            cursor: 'pointer', backdropFilter: 'blur(4px)',
+          }}
+        >
+          🔇 Activar sonido
+        </button>
+      )}
 
       <Link
         href="/signup"
