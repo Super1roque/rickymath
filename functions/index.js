@@ -1,10 +1,13 @@
 const { onRequest, onCall, HttpsError } = require('firebase-functions/v2/https')
+const { onDocumentCreated } = require('firebase-functions/v2/firestore')
 const { defineSecret } = require('firebase-functions/params')
 const admin = require('firebase-admin')
+const { Resend } = require('resend')
 
 admin.initializeApp()
 
 const DEEPGRAM_API_KEY = defineSecret('DEEPGRAM_API_KEY')
+const RESEND_API_KEY = defineSecret('RESEND_API_KEY')
 
 // Lee en voz alta un texto arbitrario con Deepgram Aura-2 (voz "olivia",
 // español) — usado por los botones de audio/explicación de las guías
@@ -87,3 +90,72 @@ exports.backfillTenants = onCall({ region: 'us-central1' }, async request => {
 
   return { creados }
 })
+
+// Se dispara sola cada vez que se crea un usuario nuevo (usuarios/{uid})
+// — mismo patrón que avisarNuevoTenant en Mi Ventita, misma cuenta de
+// Resend. Manda dos correos independientes (uno no bloquea al otro si
+// falla): un aviso para el dueño de RickyMath, y una bienvenida al
+// usuario nuevo.
+exports.avisarNuevoUsuario = onDocumentCreated(
+  { document: 'usuarios/{uid}', secrets: [RESEND_API_KEY] },
+  async event => {
+    const usuario = event.data?.data()
+    if (!usuario) return
+
+    const resend = new Resend(RESEND_API_KEY.value())
+
+    // Aviso interno — al dominio de pruebas de Resend, que solo puede
+    // mandarle correo al dueño de la cuenta (vos), así que no hace falta
+    // tener rickymath.com verificado en Resend para que esto funcione.
+    const { data, error } = await resend.emails.send({
+      from: 'RickyMath <onboarding@resend.dev>',
+      to: 'super1roque@gmail.com',
+      subject: `Nuevo usuario registrado en RickyMath: ${usuario.nombre || usuario.email}`,
+      html: `
+        <p>Se registró un usuario nuevo en RickyMath.</p>
+        <ul>
+          <li><strong>Nombre:</strong> ${usuario.nombre || '—'}</li>
+          <li><strong>Email:</strong> ${usuario.email || '—'}</li>
+          <li><strong>Teléfono:</strong> ${usuario.telefono || '—'}</li>
+          <li><strong>Plan:</strong> ${usuario.plan || '—'}</li>
+        </ul>
+      `,
+    })
+    if (error) {
+      console.error('Resend devolvió un error al avisar del nuevo usuario:', error)
+    } else {
+      console.log('Alerta de nuevo usuario enviada, id:', data?.id)
+    }
+
+    if (!usuario.email) return
+
+    // Remitente en el dominio propio (rickymath.com) — necesita estar
+    // verificado en Resend, si no este envío va a fallar (el aviso de
+    // arriba no se ve afectado, son llamadas independientes).
+    const bienvenida = await resend.emails.send({
+      from: 'RickyMath <hola@rickymath.com>',
+      to: usuario.email,
+      subject: `¡Bienvenido a RickyMath${usuario.nombre ? `, ${usuario.nombre}` : ''}!`,
+      html: `
+        <p>Hola${usuario.nombre ? ` ${usuario.nombre}` : ''},</p>
+        <p>Tu cuenta ya está lista en <strong>RickyMath</strong> — Primero grado y las Tablas de Multiplicar son gratis para siempre.</p>
+        <p><strong>Primeros pasos:</strong></p>
+        <ul>
+          <li>Elegí el grado y empezá a practicar — Ricky te va a ir guiando con voz en cada ejercicio.</li>
+          <li>Si le gusta, podés desbloquear Segundo a Quinto y Problemas con un solo pago, sin suscripciones.</li>
+        </ul>
+        <p>
+          <a href="https://rickymath.com/grados" style="display:inline-block;background:#22c55e;color:#ffffff;text-decoration:none;font-weight:600;padding:12px 20px;border-radius:8px;">
+            Entrar a RickyMath →
+          </a>
+        </p>
+        <p style="color:#6b7080;font-size:13px;">Cualquier duda, respondé este correo.</p>
+      `,
+    })
+    if (bienvenida.error) {
+      console.error('Resend devolvió un error al mandar la bienvenida al usuario:', bienvenida.error)
+    } else {
+      console.log('Correo de bienvenida enviado, id:', bienvenida.data?.id)
+    }
+  },
+)
