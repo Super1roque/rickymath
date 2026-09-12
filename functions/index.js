@@ -347,3 +347,37 @@ exports.compartirVideo = onRequest({ region: 'us-central1', cors: true, secrets:
 <meta http-equiv="refresh" content="0; url=${escapeHtml(destino)}">
 </head><body></body></html>`)
 })
+
+// GET /api/verificar-video?id=VIDEO_ID — usada por el generador de links
+// del panel de superadmin, para avisar ANTES de publicar un link si el
+// dueño del video (ej. una liga de fútbol, una discográfica) bloqueó que
+// se pueda insertar en otros sitios — si no, el link se comparte y el
+// visitante se encuentra con el error de YouTube recién al abrirlo.
+exports.verificarVideo = onRequest({ region: 'us-central1', cors: true, secrets: [YOUTUBE_API_KEY] }, async (req, res) => {
+  const videoId = extraerVideoId(req.query.id)
+  if (!videoId) {
+    res.status(400).json({ error: 'Falta un ID de video válido' })
+    return
+  }
+  try {
+    const apiRes = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=status,snippet&id=${videoId}&key=${YOUTUBE_API_KEY.value()}`)
+    if (!apiRes.ok) {
+      res.status(502).json({ error: 'YouTube Data API devolvió un error' })
+      return
+    }
+    const datos = await apiRes.json()
+    const item = datos.items?.[0]
+    if (!item) {
+      res.json({ existe: false })
+      return
+    }
+    res.json({
+      existe: true,
+      embeddable: item.status?.embeddable !== false,
+      titulo: item.snippet?.title ?? null,
+    })
+  } catch (e) {
+    console.error('verificarVideo error:', e)
+    res.status(500).json({ error: 'Error interno' })
+  }
+})

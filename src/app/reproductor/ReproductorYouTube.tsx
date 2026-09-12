@@ -56,6 +56,7 @@ export default function ReproductorYouTube() {
   const playerRef = useRef<YTPlayer | null>(null)
   const [mostrarCta, setMostrarCta] = useState(false)
   const [tituloVideo, setTituloVideo] = useState<string | null>(null)
+  const [errorVideo, setErrorVideo] = useState<number | null>(null)
 
   const videoId = extraerVideoId(searchParams.get('yt') ?? '')
   const ctaSegundo = Number(searchParams.get('cta')) || 10
@@ -90,6 +91,17 @@ export default function ReproductorYouTube() {
       playerRef.current = new window.YT.Player(contenedorRef.current, {
         videoId,
         playerVars: { autoplay: 1, mute: 1, playsinline: 1, rel: 0, modestbranding: 1 },
+        events: {
+          // Códigos 101/150: el dueño del video (una liga, una
+          // discográfica, etc.) bloqueó que se pueda insertar en otros
+          // sitios — en vez de dejar que se vea el error crudo de
+          // YouTube, mostramos nuestro propio mensaje y adelantamos el
+          // CTA, ya que el visitante llegó igual a la página.
+          onError: (e: { data: number }) => {
+            setErrorVideo(e.data)
+            setMostrarCta(true)
+          },
+        },
       })
       intervalo = setInterval(() => {
         const t = playerRef.current?.getCurrentTime()
@@ -126,6 +138,35 @@ export default function ReproductorYouTube() {
         background: '#000',
       }}>
         <div ref={contenedorRef} style={{ width: '100%', height: '100%' }} />
+
+        {errorVideo != null && (
+          <div style={{
+            position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center', gap: '0.9rem', padding: '1.5rem',
+            textAlign: 'center', background: 'linear-gradient(160deg, #0c4a6e, #14532d)',
+          }}>
+            <p style={{ color: 'white', fontWeight: 700, fontSize: '0.95rem', margin: 0, lineHeight: 1.4 }}>
+              {errorVideo === 101 || errorVideo === 150
+                ? 'El dueño de este video no permite reproducirlo acá.'
+                : 'No pudimos cargar este video.'}
+            </p>
+            <a
+              href={`https://www.youtube.com/watch?v=${videoId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="gj-boton-3d"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
+                padding: '0.6rem 1.2rem', borderRadius: 999, fontWeight: 800, fontSize: '0.85rem',
+                background: 'white', color: '#0f172a', textDecoration: 'none',
+                boxShadow: '0 4px 0 #94a3b8',
+                ['--gj-sombra' as string]: '#94a3b8',
+              }}
+            >
+              ▶️ Ver en YouTube
+            </a>
+          </div>
+        )}
       </div>
 
       {/* El CTA vive AFUERA del reproductor a propósito — así nunca tapa

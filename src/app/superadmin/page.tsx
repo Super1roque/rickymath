@@ -27,13 +27,37 @@ function extraerVideoId(input: string): string | null {
   return null
 }
 
+type EstadoEmbebible = 'verificando' | 'ok' | 'bloqueado' | 'no-existe' | 'error' | null
+
 function GeneradorLinkVideo() {
   const [url, setUrl] = useState('')
   const [segundo, setSegundo] = useState('10')
   const [copiado, setCopiado] = useState(false)
+  const [estado, setEstado] = useState<EstadoEmbebible>(null)
 
   const videoId = extraerVideoId(url)
   const link = videoId ? `https://rickymath.com/v/${videoId}-${Number(segundo) || 10}` : ''
+
+  // Chequea con la Cloud Function (que a su vez usa la YouTube Data API)
+  // si el dueño del video permite insertarlo en otros sitios — algunos
+  // canales de deportes/música lo bloquean, y sin este aviso el link se
+  // publicaría igual, solo para que quien lo abra se encuentre con el
+  // error de YouTube en vez del video.
+  useEffect(() => {
+    if (!videoId) { setEstado(null); return }
+    let cancelado = false
+    setEstado('verificando')
+    fetch(`https://us-central1-rickymath-b8697.cloudfunctions.net/verificarVideo?id=${videoId}`)
+      .then(r => r.json())
+      .then(datos => {
+        if (cancelado) return
+        if (datos.error) setEstado('error')
+        else if (!datos.existe) setEstado('no-existe')
+        else setEstado(datos.embeddable ? 'ok' : 'bloqueado')
+      })
+      .catch(() => { if (!cancelado) setEstado('error') })
+    return () => { cancelado = true }
+  }, [videoId])
 
   function copiar() {
     if (!link) return
@@ -65,6 +89,14 @@ function GeneradorLinkVideo() {
       {url.trim() && !videoId && (
         <p className="text-xs text-red-400">No reconocí un video de YouTube ahí — probá con la URL completa o solo el ID.</p>
       )}
+      {estado === 'verificando' && <p className="text-xs text-slate-500">Verificando si el video se puede insertar…</p>}
+      {estado === 'bloqueado' && (
+        <p className="text-xs text-amber-400">
+          ⚠️ El dueño de este video bloqueó que se pueda insertar en otros sitios — el link va a mostrar el error de YouTube en vez del video. Probá con otro.
+        </p>
+      )}
+      {estado === 'no-existe' && <p className="text-xs text-red-400">No encontré ese video en YouTube (¿es privado o se borró?).</p>}
+      {estado === 'error' && <p className="text-xs text-slate-500">No pude verificar el video ahora — el link se puede armar igual, revisalo antes de publicarlo.</p>}
       {link && (
         <div className="flex items-center gap-2 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2">
           <code className="flex-1 text-xs text-indigo-300 truncate">{link}</code>
