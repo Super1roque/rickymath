@@ -285,17 +285,25 @@ exports.compartirVideo = onRequest({ region: 'us-central1', cors: true }, async 
   }
 
   let titulo = 'RickyMath'
+  let descripcion = 'Mirá este video y probá RickyMath — matemáticas en el Mundo de los Bloques.'
   let miniatura = `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`
   try {
     const oembedRes = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(`https://www.youtube.com/watch?v=${videoId}`)}&format=json`)
     if (oembedRes.ok) {
       const datos = await oembedRes.json()
-      if (datos.title) titulo = `RickyMath te presenta este video: ${datos.title}`
+      if (datos.title) titulo = datos.title
       if (datos.thumbnail_url) miniatura = datos.thumbnail_url
     }
   } catch (e) {
     console.error('No se pudo obtener el oEmbed de YouTube:', e)
   }
+
+  // Nota: el oEmbed público de YouTube no trae la descripción del video,
+  // y raspar la página de YouTube para sacarla resultó poco confiable
+  // (lo que le devuelve a un fetch de servidor no siempre trae los mismos
+  // datos que a un navegador real) — se decidió dejar la descripción
+  // genérica de RickyMath en vez de depender de eso. La alternativa
+  // confiable sería la YouTube Data API v3 (necesita API key propia).
 
   res.set('Cache-Control', 'public, max-age=3600')
   res.send(`<!DOCTYPE html>
@@ -303,12 +311,13 @@ exports.compartirVideo = onRequest({ region: 'us-central1', cors: true }, async 
 <meta charset="utf-8">
 <title>${escapeHtml(titulo)}</title>
 <meta property="og:title" content="${escapeHtml(titulo)}">
-<meta property="og:description" content="Mirá este video y probá RickyMath — matemáticas en el Mundo de los Bloques.">
+<meta property="og:description" content="${escapeHtml(descripcion)}">
 <meta property="og:image" content="${escapeHtml(miniatura)}">
 <meta property="og:url" content="${escapeHtml(destino)}">
 <meta property="og:type" content="video.other">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="${escapeHtml(titulo)}">
+<meta name="twitter:description" content="${escapeHtml(descripcion)}">
 <meta name="twitter:image" content="${escapeHtml(miniatura)}">
 <meta http-equiv="refresh" content="0; url=${escapeHtml(destino)}">
 </head><body></body></html>`)
