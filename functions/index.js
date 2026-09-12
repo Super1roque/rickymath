@@ -9,6 +9,7 @@ admin.initializeApp()
 
 const DEEPGRAM_API_KEY = defineSecret('DEEPGRAM_API_KEY')
 const RESEND_API_KEY = defineSecret('RESEND_API_KEY')
+const YOUTUBE_API_KEY = defineSecret('YOUTUBE_API_KEY')
 
 // Lee en voz alta un texto arbitrario con Deepgram Aura-2 (voz "olivia",
 // español) — usado por los botones de audio/explicación de las guías
@@ -266,7 +267,7 @@ function escapeHtml(s) {
 // (vía el oEmbed público de YouTube, sin necesitar API key); a una
 // persona real la redirige de una a /reproductor, que es donde vive la
 // experiencia interactiva de verdad.
-exports.compartirVideo = onRequest({ region: 'us-central1', cors: true }, async (req, res) => {
+exports.compartirVideo = onRequest({ region: 'us-central1', cors: true, secrets: [YOUTUBE_API_KEY] }, async (req, res) => {
   const videoId = extraerVideoId(req.query.yt)
   const cta = req.query.cta ? String(req.query.cta) : '10'
   const destino = videoId
@@ -298,12 +299,23 @@ exports.compartirVideo = onRequest({ region: 'us-central1', cors: true }, async 
     console.error('No se pudo obtener el oEmbed de YouTube:', e)
   }
 
-  // Nota: el oEmbed público de YouTube no trae la descripción del video,
-  // y raspar la página de YouTube para sacarla resultó poco confiable
-  // (lo que le devuelve a un fetch de servidor no siempre trae los mismos
-  // datos que a un navegador real) — se decidió dejar la descripción
-  // genérica de RickyMath en vez de depender de eso. La alternativa
-  // confiable sería la YouTube Data API v3 (necesita API key propia).
+  // El oEmbed no trae la descripción del video — para eso sí hace falta
+  // la YouTube Data API v3 (con API key propia, a diferencia del oEmbed).
+  try {
+    const apiRes = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${YOUTUBE_API_KEY.value()}`)
+    if (apiRes.ok) {
+      const datos = await apiRes.json()
+      const desc = datos.items?.[0]?.snippet?.description
+      if (desc) {
+        const texto = desc.replace(/\s+/g, ' ').trim()
+        descripcion = texto.length > 200 ? `${texto.slice(0, 197)}...` : texto
+      }
+    } else {
+      console.log('compartirVideo: YouTube Data API devolvió', apiRes.status)
+    }
+  } catch (e) {
+    console.error('No se pudo obtener la descripción vía YouTube Data API:', e)
+  }
 
   res.set('Cache-Control', 'public, max-age=3600')
   res.send(`<!DOCTYPE html>
