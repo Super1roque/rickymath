@@ -33,7 +33,7 @@ function GeneradorLinkVideo() {
   const [copiado, setCopiado] = useState(false)
 
   const videoId = extraerVideoId(url)
-  const link = videoId ? `https://rickymath.com/compartir?yt=${videoId}&cta=${Number(segundo) || 10}` : ''
+  const link = videoId ? `https://rickymath.com/v/${videoId}-${Number(segundo) || 10}` : ''
 
   function copiar() {
     if (!link) return

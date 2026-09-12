@@ -268,8 +268,21 @@ function escapeHtml(s) {
 // persona real la redirige de una a /reproductor, que es donde vive la
 // experiencia interactiva de verdad.
 exports.compartirVideo = onRequest({ region: 'us-central1', cors: true, secrets: [YOUTUBE_API_KEY] }, async (req, res) => {
-  const videoId = extraerVideoId(req.query.yt)
-  const cta = req.query.cta ? String(req.query.cta) : '10'
+  // Dos formas de llamar a esta función: /compartir?yt=&cta= (la
+  // original), o el formato corto /v/ID-SEGUNDOS (más lindo para mandar
+  // por WhatsApp, mismo resultado final).
+  let videoId, cta
+  if (req.query.yt) {
+    videoId = extraerVideoId(req.query.yt)
+    cta = req.query.cta ? String(req.query.cta) : '10'
+  } else {
+    const corto = req.path.match(/^\/v\/([a-zA-Z0-9_-]+)-(\d+)$/)
+    if (corto) {
+      videoId = extraerVideoId(corto[1])
+      cta = corto[2]
+    }
+  }
+  cta = cta || '10'
   const destino = videoId
     ? `https://rickymath.com/reproductor?yt=${encodeURIComponent(videoId)}&cta=${encodeURIComponent(cta)}`
     : 'https://rickymath.com/reproductor'
