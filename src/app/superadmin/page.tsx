@@ -8,6 +8,78 @@ import {
   type Tenant,
 } from '@/lib/tenants'
 
+// Misma lógica que extraerVideoId() en ReproductorYouTube.tsx y en la
+// Cloud Function compartirVideo — acepta un ID puro o cualquier formato
+// de URL común de YouTube.
+function extraerVideoId(input: string): string | null {
+  const limpio = input.trim()
+  if (/^[a-zA-Z0-9_-]{11}$/.test(limpio)) return limpio
+  try {
+    const url = new URL(limpio)
+    if (url.hostname.includes('youtu.be')) return url.pathname.slice(1) || null
+    const v = url.searchParams.get('v')
+    if (v) return v
+    const match = url.pathname.match(/\/embed\/([a-zA-Z0-9_-]{11})/)
+    if (match) return match[1]
+  } catch {
+    return null
+  }
+  return null
+}
+
+function GeneradorLinkVideo() {
+  const [url, setUrl] = useState('')
+  const [segundo, setSegundo] = useState('10')
+  const [copiado, setCopiado] = useState(false)
+
+  const videoId = extraerVideoId(url)
+  const link = videoId ? `https://rickymath.com/compartir?yt=${videoId}&cta=${Number(segundo) || 10}` : ''
+
+  function copiar() {
+    if (!link) return
+    navigator.clipboard.writeText(link)
+    setCopiado(true)
+    setTimeout(() => setCopiado(false), 2000)
+  }
+
+  return (
+    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 md:p-6 space-y-3">
+      <h2 className="text-sm font-bold text-white">Generar link de video con CTA</h2>
+      <div className="flex flex-col md:flex-row gap-3">
+        <input
+          value={url}
+          onChange={e => { setUrl(e.target.value); setCopiado(false) }}
+          placeholder="Pegá la URL (o el ID) del video de YouTube…"
+          className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        />
+        <input
+          value={segundo}
+          onChange={e => { setSegundo(e.target.value); setCopiado(false) }}
+          type="number"
+          min={0}
+          placeholder="Segundo del CTA"
+          title="Segundo del video en el que aparece el banner de Ricky"
+          className="w-full md:w-44 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        />
+      </div>
+      {url.trim() && !videoId && (
+        <p className="text-xs text-red-400">No reconocí un video de YouTube ahí — probá con la URL completa o solo el ID.</p>
+      )}
+      {link && (
+        <div className="flex items-center gap-2 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2">
+          <code className="flex-1 text-xs text-indigo-300 truncate">{link}</code>
+          <button
+            onClick={copiar}
+            className="text-xs font-medium text-indigo-400 hover:text-indigo-300 transition flex-shrink-0"
+          >
+            {copiado ? '✅ Copiado' : 'Copiar'}
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function SuperAdminPage() {
   const { user, loading: authLoading, logout } = useAuth()
   const router = useRouter()
@@ -112,6 +184,8 @@ export default function SuperAdminPage() {
         </div>
 
         {mensajeBackfill && <p className="text-sm text-slate-400">{mensajeBackfill}</p>}
+
+        <GeneradorLinkVideo />
 
         <input
           value={busqueda}
