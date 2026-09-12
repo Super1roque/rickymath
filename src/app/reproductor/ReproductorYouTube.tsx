@@ -90,29 +90,61 @@ export default function ReproductorYouTube() {
   }
 
   return (
-    <div style={{
-      position: 'relative', width: '100%', maxWidth: 640, margin: '0 auto', aspectRatio: '16 / 9',
-      borderRadius: 16, overflow: 'hidden', boxShadow: '0 12px 0 rgba(0,0,0,0.25), 0 20px 40px rgba(0,0,0,0.4)',
-      background: '#000',
-    }}>
-      <div ref={contenedorRef} style={{ width: '100%', height: '100%' }} />
+    <div style={{ width: '100%', maxWidth: 640, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      <div style={{
+        position: 'relative', width: '100%', aspectRatio: '16 / 9',
+        borderRadius: 16, overflow: 'hidden', boxShadow: '0 12px 0 rgba(0,0,0,0.25), 0 20px 40px rgba(0,0,0,0.4)',
+        background: '#000',
+      }}>
+        <div ref={contenedorRef} style={{ width: '100%', height: '100%' }} />
+      </div>
 
-      <Link
-        href="/signup"
+      {/* El CTA vive AFUERA del reproductor a propósito — así nunca tapa
+          los controles ni la imagen del video en sí, y puede tener su
+          propio diseño (Ricky, degradé de marca) sin pelear con el
+          iframe de YouTube. */}
+      <div
+        aria-hidden={!mostrarCta}
         style={{
-          position: 'absolute', left: '50%', bottom: '1.5rem',
-          display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
-          padding: '0.85rem 1.5rem', borderRadius: 999, fontWeight: 800, fontSize: '1rem',
-          background: 'linear-gradient(180deg, #22c55e, #14532d)', color: 'white', textDecoration: 'none',
-          boxShadow: '0 6px 0 #14532d', border: 'none',
+          display: 'flex', alignItems: 'center', gap: '1rem',
+          background: 'linear-gradient(135deg, #14532d, #0c4a6e)',
+          border: '2px solid rgba(255,255,255,0.15)',
+          borderRadius: 20,
+          boxShadow: '0 8px 0 rgba(0,0,0,0.25)',
+          overflow: 'hidden',
+          transition: 'opacity 0.45s ease, transform 0.45s ease, max-height 0.45s ease, padding 0.45s ease',
           opacity: mostrarCta ? 1 : 0,
-          transform: `translateX(-50%) translateY(${mostrarCta ? '0' : '12px'})`,
-          transition: 'opacity 0.4s ease, transform 0.4s ease',
-          pointerEvents: mostrarCta ? 'auto' : 'none',
+          transform: mostrarCta ? 'translateY(0)' : 'translateY(10px)',
+          maxHeight: mostrarCta ? 200 : 0,
+          padding: mostrarCta ? '1rem 1.25rem' : '0 1.25rem',
         }}
       >
-        ✨ Crear cuenta gratis →
-      </Link>
+        <img
+          src="/ricky/waving.png"
+          alt="Ricky saludando"
+          width={80}
+          height={80}
+          style={{ flexShrink: 0, filter: 'drop-shadow(0 4px 0 rgba(0,0,0,0.25))' }}
+        />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ color: 'white', fontWeight: 800, fontSize: '0.95rem', margin: '0 0 0.5rem', lineHeight: 1.3 }}>
+            ¿Tu hijo quiere aprender matemáticas jugando?
+          </p>
+          <Link
+            href="/signup"
+            className="gj-boton-3d"
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
+              padding: '0.55rem 1.1rem', borderRadius: 999, fontWeight: 800, fontSize: '0.88rem',
+              background: 'linear-gradient(180deg, #22c55e, #15803d)', color: 'white', textDecoration: 'none',
+              boxShadow: '0 4px 0 #15803d',
+              ['--gj-sombra' as string]: '#15803d',
+            }}
+          >
+            ✨ Probar RickyMath gratis
+          </Link>
+        </div>
+      </div>
     </div>
   )
 }

@@ -39,6 +39,17 @@ export default function ReproductorPage() {
       background: 'linear-gradient(180deg, #38bdf8 0%, #7dd3fc 20%, #0c4a6e 60%, #14532d 100%)',
     }}>
       <EstilosJuego />
+      <div style={{ textAlign: 'center' }}>
+        <h1 style={{
+          color: 'white', fontWeight: 800, fontSize: '1.5rem', margin: 0,
+          textShadow: '2px 2px 0 #0c4a6e',
+        }}>
+          RickyMath
+        </h1>
+        <p style={{ color: 'rgba(255,255,255,0.85)', fontWeight: 600, fontSize: '0.85rem', margin: '0.25rem 0 0' }}>
+          Matemáticas en el Mundo de los Bloques
+        </p>
+      </div>
       <Suspense fallback={null}>
         <ReproductorYouTube />
       </Suspense>
