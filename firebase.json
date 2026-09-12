@@ -18,7 +18,8 @@
     ],
     "cleanUrls": true,
     "rewrites": [
-      { "source": "/api/guia-voz", "function": { "functionId": "guiaVoz", "region": "us-central1" } }
+      { "source": "/api/guia-voz", "function": { "functionId": "guiaVoz", "region": "us-central1" } },
+      { "source": "/compartir", "function": { "functionId": "compartirVideo", "region": "us-central1" } }
     ],
     "headers": [
       {

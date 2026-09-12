@@ -55,9 +55,31 @@ export default function ReproductorYouTube() {
   const contenedorRef = useRef<HTMLDivElement>(null)
   const playerRef = useRef<YTPlayer | null>(null)
   const [mostrarCta, setMostrarCta] = useState(false)
+  const [tituloVideo, setTituloVideo] = useState<string | null>(null)
 
   const videoId = extraerVideoId(searchParams.get('yt') ?? '')
   const ctaSegundo = Number(searchParams.get('cta')) || 10
+
+  // El oEmbed de YouTube es público (sin API key) y con CORS habilitado
+  // para el navegador — lo usamos para mostrar el título real del video
+  // acá y en la pestaña. Esto es solo para lo que ve una persona real; la
+  // miniatura/título que arma la vista previa al compartir el link la
+  // resuelve por separado la Cloud Function compartirVideo (los bots no
+  // ejecutan este JS).
+  useEffect(() => {
+    if (!videoId) return
+    let cancelado = false
+    fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(`https://www.youtube.com/watch?v=${videoId}`)}&format=json`)
+      .then(r => (r.ok ? r.json() : null))
+      .then(datos => {
+        if (!cancelado && datos?.title) {
+          setTituloVideo(datos.title)
+          document.title = `RickyMath te presenta este video: ${datos.title}`
+        }
+      })
+      .catch(() => {})
+    return () => { cancelado = true }
+  }, [videoId])
 
   useEffect(() => {
     if (!videoId || !contenedorRef.current) return
@@ -91,6 +113,13 @@ export default function ReproductorYouTube() {
 
   return (
     <div style={{ width: '100%', maxWidth: 640, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      <h1 style={{
+        color: 'white', fontWeight: 800, fontSize: '1.15rem', margin: 0, textAlign: 'center',
+        textShadow: '2px 2px 0 #0c4a6e', lineHeight: 1.35,
+      }}>
+        {tituloVideo ? <>RickyMath te presenta este video: <span style={{ fontWeight: 700 }}>{tituloVideo}</span></> : 'RickyMath'}
+      </h1>
+
       <div style={{
         position: 'relative', width: '100%', aspectRatio: '16 / 9',
         borderRadius: 16, overflow: 'hidden', boxShadow: '0 12px 0 rgba(0,0,0,0.25), 0 20px 40px rgba(0,0,0,0.4)',

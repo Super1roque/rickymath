@@ -228,3 +228,88 @@ exports.recordatorioDesbloqueo = onSchedule(
     }
   },
 )
+
+// Extrae el ID de un video de YouTube desde un ID puro o cualquier
+// formato de URL común (watch?v=, youtu.be/, /embed/) — misma lógica que
+// extraerVideoId() del lado del cliente en ReproductorYouTube.tsx.
+function extraerVideoId(input) {
+  const limpio = (input || '').trim()
+  if (/^[a-zA-Z0-9_-]{11}$/.test(limpio)) return limpio
+  try {
+    const url = new URL(limpio)
+    if (url.hostname.includes('youtu.be')) return url.pathname.slice(1) || null
+    const v = url.searchParams.get('v')
+    if (v) return v
+    const match = url.pathname.match(/\/embed\/([a-zA-Z0-9_-]{11})/)
+    if (match) return match[1]
+  } catch {
+    return null
+  }
+  return null
+}
+
+// User-Agents de los bots que arman la vista previa de un link al
+// compartirlo — a estos les servimos meta tags con el título/miniatura
+// real del video de YouTube. A cualquier otro visitante (una persona de
+// verdad) lo mandamos derecho a la página interactiva real.
+const BOTS_DE_PREVIEW = /facebookexternalhit|WhatsApp|Twitterbot|Slackbot|TelegramBot|Discordbot|LinkedInBot|SkypeUriPreview|Googlebot|Pinterest|redditbot|Applebot/i
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
+}
+
+// GET /compartir?yt=ID_O_URL&cta=SEGUNDOS — pensada para ser el link que
+// se comparte (no /reproductor directamente): un sitio estático no puede
+// generar un <title>/og:image distinto por cada video según un parámetro
+// de la URL, así que esta función hace de intermediaria. A un bot de
+// redes le arma meta tags con el título y la miniatura reales del video
+// (vía el oEmbed público de YouTube, sin necesitar API key); a una
+// persona real la redirige de una a /reproductor, que es donde vive la
+// experiencia interactiva de verdad.
+exports.compartirVideo = onRequest({ region: 'us-central1', cors: true }, async (req, res) => {
+  const videoId = extraerVideoId(req.query.yt)
+  const cta = req.query.cta ? String(req.query.cta) : '10'
+  const destino = videoId
+    ? `https://rickymath.com/reproductor?yt=${encodeURIComponent(videoId)}&cta=${encodeURIComponent(cta)}`
+    : 'https://rickymath.com/reproductor'
+
+  if (!videoId) {
+    res.redirect(302, destino)
+    return
+  }
+
+  const esBot = BOTS_DE_PREVIEW.test(req.get('User-Agent') || '')
+  if (!esBot) {
+    res.redirect(302, destino)
+    return
+  }
+
+  let titulo = 'RickyMath'
+  let miniatura = `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`
+  try {
+    const oembedRes = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(`https://www.youtube.com/watch?v=${videoId}`)}&format=json`)
+    if (oembedRes.ok) {
+      const datos = await oembedRes.json()
+      if (datos.title) titulo = `RickyMath te presenta este video: ${datos.title}`
+      if (datos.thumbnail_url) miniatura = datos.thumbnail_url
+    }
+  } catch (e) {
+    console.error('No se pudo obtener el oEmbed de YouTube:', e)
+  }
+
+  res.set('Cache-Control', 'public, max-age=3600')
+  res.send(`<!DOCTYPE html>
+<html lang="es"><head>
+<meta charset="utf-8">
+<title>${escapeHtml(titulo)}</title>
+<meta property="og:title" content="${escapeHtml(titulo)}">
+<meta property="og:description" content="Mirá este video y probá RickyMath — matemáticas en el Mundo de los Bloques.">
+<meta property="og:image" content="${escapeHtml(miniatura)}">
+<meta property="og:url" content="${escapeHtml(destino)}">
+<meta property="og:type" content="video.other">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="${escapeHtml(titulo)}">
+<meta name="twitter:image" content="${escapeHtml(miniatura)}">
+<meta http-equiv="refresh" content="0; url=${escapeHtml(destino)}">
+</head><body></body></html>`)
+})
