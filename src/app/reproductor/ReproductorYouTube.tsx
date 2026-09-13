@@ -198,7 +198,7 @@ export default function ReproductorYouTube() {
         />
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ color: 'white', fontWeight: 800, fontSize: '0.95rem', margin: '0 0 0.5rem', lineHeight: 1.3 }}>
-            ¿Tu hijo domina lo que le toca en su grado?
+            ¿Tu hijo domina las matemáticas de su grado?
           </p>
           <Link
             href="/test-nivel"
