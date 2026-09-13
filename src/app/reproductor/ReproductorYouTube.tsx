@@ -60,6 +60,7 @@ export default function ReproductorYouTube() {
   const [mostrarCta, setMostrarCta] = useState(false)
   const [tituloVideo, setTituloVideo] = useState<string | null>(null)
   const [errorVideo, setErrorVideo] = useState<number | null>(null)
+  const [esVertical, setEsVertical] = useState(false)
 
   const videoId = extraerVideoId(searchParams.get('yt') ?? '')
   const ctaSegundo = Number(searchParams.get('cta')) || 10
@@ -70,15 +71,27 @@ export default function ReproductorYouTube() {
   // miniatura/título que arma la vista previa al compartir el link la
   // resuelve por separado la Cloud Function compartirVideo (los bots no
   // ejecutan este JS).
+  //
+  // El mismo oEmbed también sirve para detectar un Short: para video
+  // vertical YouTube devuelve height > width (p. ej. 113×200), a
+  // diferencia de los 200×113 normales — pero solo si se consulta con
+  // una URL en formato /shorts/{id}. Consultado como watch?v=, YouTube
+  // siempre devuelve las dimensiones horizontales por defecto sin
+  // importar la forma real del video, así que usamos /shorts/ siempre
+  // (funciona igual de bien para videos normales).
   useEffect(() => {
     if (!videoId) return
     let cancelado = false
-    fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(`https://www.youtube.com/watch?v=${videoId}`)}&format=json`)
+    fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(`https://www.youtube.com/shorts/${videoId}`)}&format=json`)
       .then(r => (r.ok ? r.json() : null))
       .then(datos => {
-        if (!cancelado && datos?.title) {
+        if (cancelado || !datos) return
+        if (datos.title) {
           setTituloVideo(datos.title)
           document.title = `RickyMath te presenta este video: ${datos.title}`
+        }
+        if (typeof datos.width === 'number' && typeof datos.height === 'number') {
+          setEsVertical(datos.height > datos.width)
         }
       })
       .catch(() => {})
@@ -93,6 +106,8 @@ export default function ReproductorYouTube() {
       if (!contenedorRef.current || !window.YT) return
       playerRef.current = new window.YT.Player(contenedorRef.current, {
         videoId,
+        width: '100%',
+        height: '100%',
         playerVars: { autoplay: 1, mute: 1, playsinline: 1, rel: 0, modestbranding: 1 },
         events: {
           // Códigos 101/150: el dueño del video (una liga, una
@@ -127,7 +142,7 @@ export default function ReproductorYouTube() {
   }
 
   return (
-    <div style={{ width: '100%', maxWidth: 640, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+    <div style={{ width: '100%', maxWidth: esVertical ? 380 : 640, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
       <h1 style={{
         color: 'white', fontWeight: 800, fontSize: '1.15rem', margin: 0, textAlign: 'center',
         textShadow: '2px 2px 0 #0c4a6e', lineHeight: 1.35,
@@ -136,7 +151,7 @@ export default function ReproductorYouTube() {
       </h1>
 
       <div style={{
-        position: 'relative', width: '100%', aspectRatio: '16 / 9',
+        position: 'relative', width: '100%', aspectRatio: esVertical ? '9 / 16' : '16 / 9',
         borderRadius: 16, overflow: 'hidden', boxShadow: '0 12px 0 rgba(0,0,0,0.25), 0 20px 40px rgba(0,0,0,0.4)',
         background: '#000',
       }}>
