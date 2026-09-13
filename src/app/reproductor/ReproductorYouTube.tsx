@@ -137,9 +137,16 @@ export default function ReproductorYouTube() {
   // El CTA aparece más abajo que el video — en un Short (marco vertical
   // y más alto) queda fuera de la vista si la persona hizo scroll para
   // ver el video completo. Al aparecer, llevamos la pantalla hacia el
-  // CTA para que no pase desapercibido.
+  // CTA para que no pase desapercibido. El delay espera a que termine
+  // la transición de max-height del CTA (0.45s) — si se llama antes,
+  // scrollIntoView centra sobre la caja todavía chica y el botón, que
+  // termina de aparecer después, queda cortado abajo de la pantalla.
   useEffect(() => {
-    if (mostrarCta) ctaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    if (!mostrarCta) return
+    const id = setTimeout(() => {
+      ctaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+    }, 500)
+    return () => clearTimeout(id)
   }, [mostrarCta])
 
   if (!videoId) {
@@ -152,7 +159,15 @@ export default function ReproductorYouTube() {
 
   return (
     <div style={{ width: '100%', maxWidth: esVertical ? 380 : 640, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-      <h1 style={{
+      {/* En un Short, YouTube ya muestra el título y el canal encima del
+          video — repetirlo acá arriba solo roba el espacio vertical que
+          más falta hace para que el CTA quepa en pantalla. Lo dejamos
+          solo accesible (screen readers) y visible únicamente en el
+          formato horizontal, donde sí hay espacio de sobra. */}
+      <h1 style={esVertical ? {
+        position: 'absolute', width: 1, height: 1, padding: 0, margin: -1,
+        overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', border: 0,
+      } : {
         color: 'white', fontWeight: 800, fontSize: '1.15rem', margin: 0, textAlign: 'center',
         textShadow: '2px 2px 0 #0c4a6e', lineHeight: 1.35,
       }}>
