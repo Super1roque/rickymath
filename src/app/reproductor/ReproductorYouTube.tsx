@@ -57,6 +57,7 @@ export default function ReproductorYouTube() {
   const searchParams = useSearchParams()
   const contenedorRef = useRef<HTMLDivElement>(null)
   const playerRef = useRef<YTPlayer | null>(null)
+  const ctaRef = useRef<HTMLDivElement>(null)
   const [mostrarCta, setMostrarCta] = useState(false)
   const [tituloVideo, setTituloVideo] = useState<string | null>(null)
   const [errorVideo, setErrorVideo] = useState<number | null>(null)
@@ -133,6 +134,14 @@ export default function ReproductorYouTube() {
     }
   }, [videoId, ctaSegundo])
 
+  // El CTA aparece más abajo que el video — en un Short (marco vertical
+  // y más alto) queda fuera de la vista si la persona hizo scroll para
+  // ver el video completo. Al aparecer, llevamos la pantalla hacia el
+  // CTA para que no pase desapercibido.
+  useEffect(() => {
+    if (mostrarCta) ctaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }, [mostrarCta])
+
   if (!videoId) {
     return (
       <p style={{ color: 'white', textAlign: 'center', maxWidth: 420, fontWeight: 700 }}>
@@ -192,6 +201,7 @@ export default function ReproductorYouTube() {
           propio diseño (Ricky, degradé de marca) sin pelear con el
           iframe de YouTube. */}
       <div
+        ref={ctaRef}
         aria-hidden={!mostrarCta}
         style={{
           display: 'flex', alignItems: 'center', gap: '1rem',
