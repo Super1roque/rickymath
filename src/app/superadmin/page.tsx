@@ -21,6 +21,8 @@ function extraerVideoId(input: string): string | null {
     if (v) return v
     const match = url.pathname.match(/\/embed\/([a-zA-Z0-9_-]{11})/)
     if (match) return match[1]
+    const shortsMatch = url.pathname.match(/\/shorts\/([a-zA-Z0-9_-]{11})/)
+    if (shortsMatch) return shortsMatch[1]
   } catch {
     return null
   }
