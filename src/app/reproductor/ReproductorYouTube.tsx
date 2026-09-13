@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import Ricky from '@/components/guia/Ricky'
 
 declare global {
   interface Window {
@@ -189,19 +190,18 @@ export default function ReproductorYouTube() {
           padding: mostrarCta ? '1rem 1.25rem' : '0 1.25rem',
         }}
       >
-        <img
-          src="/ricky/waving.png"
-          alt="Ricky saludando"
-          width={80}
-          height={80}
+        <Ricky
+          mood="waving"
+          loop
+          size={80}
           style={{ flexShrink: 0, filter: 'drop-shadow(0 4px 0 rgba(0,0,0,0.25))' }}
         />
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ color: 'white', fontWeight: 800, fontSize: '0.95rem', margin: '0 0 0.5rem', lineHeight: 1.3 }}>
-            ¿Tu hijo quiere aprender matemáticas jugando?
+            ¿Tu hijo domina lo que le toca en su grado?
           </p>
           <Link
-            href="/signup"
+            href="/test-nivel"
             className="gj-boton-3d"
             style={{
               display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
@@ -211,7 +211,7 @@ export default function ReproductorYouTube() {
               ['--gj-sombra' as string]: '#15803d',
             }}
           >
-            ✨ Probar RickyMath gratis
+            🧠 Hacé el test gratis
           </Link>
         </div>
       </div>
